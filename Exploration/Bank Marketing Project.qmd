@@ -4,25 +4,52 @@ format: docx
 editor: visual
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-testeste
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+# Introduction
 
 ```{r}
 1 + 1
 ```
 
-You can add options to executable code like this
+# Lit. Review
 
-```{r}
+# Method
+
+# Data Exploration
+
+```{r, Loading Data, warning=FALSE}
 #| echo: false
-2 * 2
+library(caret)
+library(ggplot2)
+library(MASS)
+library(tidyverse)
+library(corrplot)
+library(car)
+
+bank = read.csv("C:/Users/crew_/OneDrive/Escritorio/Guille/UTSA Masters/MSDA/DA6813/DA6813/bank-additional.csv", sep = ";")
+
+bank = bank %>% 
+  select(-duration) #removing duration from dataset
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+
+```{r, Summary}
+summary(bank)
+```
+
+```{r}
+sum(is.na(bank)) #No NAs
+
+#| echo: false
+diabetes_long = diabetes %>% 
+  dplyr::select(-Outcome) %>%  # I am excluding the outcome variable
+  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Value")
+
+# Creating the histogram in a facet view
+ggplot(diabetes_long, aes(x = Value)) +
+  geom_histogram(bins = 30, fill = "gray", color = "black") +
+  facet_wrap(~ Variable, scales = "free") +
+  theme_minimal() +
+  labs(title = "Distribution of Variables", x = NULL, y = "Frequency") +
+  theme(strip.text = element_text(face = "bold"))
+```
+

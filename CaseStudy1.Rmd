@@ -1,13 +1,14 @@
 ---
 title: "Case Study 1"
-author: "Joshua Gardner"
+author: "Alex Martinez"
 date: "2024-09-10"
 output: pdf_document
 ---
 
-```{r libraruies, include=FALSE}
-#idk what i was going to use so i added everything that seemed useul
+```{r libraries, include=FALSE}
+#idk what i was going to use so i added everything that seemed useful
 library(caret)
+library(here)
 library(lattice)
 library(ggplot2)
 library(logistf)
@@ -16,9 +17,19 @@ library(tidyverse)
 library(corrplot)
 library(car)
 ```
+
 ```{r load data and exploration}
-df1 <- read.csv2("C:/Users/Josh/Documents/Algor1/bank-additional.csv")
+#df1 <- read.csv2("~/MS Data Applications/wk03 Bank Case Study/bank-additional.csv")
+
+##### We can delete the path above once we confirm if works for you guys #####
+
+
+bank_data = here::here("Data","bank-additional.csv") #File Location 
+df1 = read.csv2(bank_data) # Reading the csv from the location above
+
+
 str(df1)
+
 #change y into factor 
 df1$y<-as.factor(df1$y)
 df1$job<- as.factor(df1$job)
@@ -38,6 +49,18 @@ df1$euribor3m <- as.numeric(df1$euribor3m)
 df1$nr.employed <- as.integer(df1$nr.employed)
 unique(df1$previous)
 unique(df1$pdays)
+
+#Pdays - make it an indicator of not/yes
+#duration - amt of time you have them, so same as Y 
+
+```
+
+```{r}
+#Exploring variables 
+
+
+
+
 # is there high correlation in any of our numeric variables
 df_num <- dplyr::select_if(df1, is.numeric)
 M = cor(df_num)
@@ -63,12 +86,21 @@ df_train <- df_bal[df_bal_split,]
 df_test <- df_bal[-df_bal_split,]
 
 #glm model
-glm <- glm(y ~ . - pdays, data = df_train, family = binomial) #Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+glm <- glm(y ~ . - pdays - duration, data = df_train, family = binomial) #Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+glm.back = step(glm(y ~ . - pdays - duration, data = df_train, family = binomial), direction = "backward") # stepwise backward elim.
 
+summary(glm)
+summary(glm.back) ## look at results
+
+vif(glm.back)
+
+#remove high vif
+bck2 <- glm(y ~ age + marital + contact + month + campaign + poutcome + 
+              cons.price.idx + euribor3m
+            , data = df_train, family = binomial)
+
+summary(bck2)
+vif(bck2)
 #running again but with Firth’s penalized likelihood approach
 firth <- logistf(y ~ ., data = df_train,firth = TRUE)
 ```
-
-
-
-
