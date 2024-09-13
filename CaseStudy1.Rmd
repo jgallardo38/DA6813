@@ -18,18 +18,49 @@ library(corrplot)
 library(car)
 ```
 
-```{r load data and exploration}
+####Created a template below and we can modify titles as progress####
+
+# Executive Summary
+
+Brief introduction of problem. Summarizes key findings. Summarizes insights behind key findings.
+
+# Our Problem
+
+Clear description of the problem, from an application and theoretical point of view. Outlines the report.
+
+# Literature Review
+
+Discusses and cites existing works in the theoretical and application realm.
+
+# Methods
+
+Discusses types of variables, sample size, and sampling techniques (if any). Discusses the model(s) and its assumptions and limitations.
+
+# Data
+
+Discusses how data was handled, i.e. cleaned and preprocessed. Discusses distributions, correlations, etc.
+
+```{r Loading Data, warning=FALSE}
 #df1 <- read.csv2("~/MS Data Applications/wk03 Bank Case Study/bank-additional.csv")
 
 ##### We can delete the path above once we confirm if works for you guys #####
 
+#| echo: false
 
 bank_data = here::here("Data","bank-additional.csv") #File Location 
 df1 = read.csv2(bank_data) # Reading the csv from the location above
 
+```
 
-str(df1)
+## Data Structure
 
+```{r Data Structure}
+str(df1) #Should we keep in final paper or hide?
+```
+
+## Data Cleanup
+
+```{r Data Cleanup}
 #change y into factor 
 df1$y<-as.factor(df1$y)
 df1$job<- as.factor(df1$job)
@@ -54,6 +85,14 @@ unique(df1$pdays)
 #duration - amt of time you have them, so same as Y 
 
 ```
+
+# Results
+
+Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.
+
+# Conclusions
+
+Concludes with a summary of the aim and results. Discusses alternative methods that can be used.
 
 ```{r}
 #Exploring variables 
