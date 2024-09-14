@@ -60,6 +60,7 @@ str(df1) #Should we keep in final paper or hide?
 ## Data Cleanup
 
 ```{r Data Cleanup}
+str(df1)
 #change y into factor 
 df1$y<-as.factor(df1$y)
 df1$job<- as.factor(df1$job)
@@ -79,6 +80,10 @@ df1$euribor3m <- as.numeric(df1$euribor3m)
 df1$nr.employed <- as.integer(df1$nr.employed)
 unique(df1$previous)
 unique(df1$pdays)
+df1$y_int <- ifelse(df1$y == 'yes', 1, 0)
+df1$ppdays_ind <- ifelse(df1$pdays == 999, 0, 1)
+df1$married_ind <- ifelse(df1$marital == 'married', 1, 0)
+
 
 #Pdays - make it an indicator of not/yes
 #duration - amt of time you have them, so same as Y 
@@ -111,37 +116,149 @@ summary(df1$y)
 
 
 
-### MOdel Building
+
 ```{r model building}
+#keep variables I want for Modeling
+df2 <- df1 %>% select(age,job, married_ind, education, default, housing, loan, contact, campaign, 
+                      ppdays_ind, previous, poutcome, emp.var.rate, cons.price.idx, cons.conf.idx, 
+                      euribor3m, nr.employed, y, y_int) 
+
+
 # since data is unbalanced we should take a more balanced sample
- 
-df_y_y = df1 %>% filter(y == "yes")
-df_y_n = df1 %>% filter(y == "no")
+set.seed(42) 
+df_y_y = df2 %>% filter(y == "yes")
+df_y_n = df2 %>% filter(y == "no")
 sample_y = sample_n(df_y_n, nrow(df_y_y))
 df_bal = rbind(df_y_y,sample_y)
 
 # test and train split
-set.seed(42)
+
 df_bal_split <- sample(nrow(df_bal),0.8*nrow(df_bal),replace = F) # Setting training sample to be 80% of the data
 df_train <- df_bal[df_bal_split,]
 df_test <- df_bal[-df_bal_split,]
 
+
+# creating binary numeric variable for linear model
+str(df2)
+
+# first exploring with backwards step selection on lm with full data
+lm1 <- lm(y_int ~ . -y, data = df_train)
+summary(lm1)
+
+lm1_step <- step(lm1, direction = "backward")
+summary(lm1_step)
+
+# final lm model base off of step 
+lmf <- lm(y_int ~ age + contact + campaign + poutcome + emp.var.rate + 
+    cons.price.idx + cons.conf.idx, data = df_train)
+#summary(lmf)
+
+vif(lmf) # confirm there is no co linearity 
+# R- Squared is very small at 27% but is expectedc since y is binomial
+
+
+### LETS TRY SAME TECHNIQUE BUT WITH LOGISTIC MODEL
 #glm model
-glm <- glm(y ~ . - pdays - duration, data = df_train, family = binomial) #Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-glm.back = step(glm(y ~ . - pdays - duration, data = df_train, family = binomial), direction = "backward") # stepwise backward elim.
+glm1 <- glm(y_int ~ . -y, data = df_train, family = binomial) #Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+summary(glm1)
 
-summary(glm)
-summary(glm.back) ## look at results
+# using backwards Step Selection
+glm_step = step(glm1, direction = "backward") # stepwise backward elim.
+summary(glm_step)
 
-vif(glm.back)
+glmf <- glm(formula = y_int ~ age + contact + campaign + previous + poutcome + 
+    emp.var.rate + cons.price.idx + cons.conf.idx, family = binomial, 
+    data = df_train)
+summary(glmf)
 
-#remove high vif
-bck2 <- glm(y ~ age + marital + contact + month + campaign + poutcome + 
-              cons.price.idx + euribor3m
-            , data = df_train, family = binomial)
+vif(glmf) # no colinearity detected
 
-summary(bck2)
-vif(bck2)
-#running again but with Firth’s penalized likelihood approach
-firth <- logistf(y ~ ., data = df_train,firth = TRUE)
+# Predict the probability on TEST - cutoff 0.5
+df_test$PredProb <- predict.glm(glmf, newdata = df_test, type = 'response')
+
+#create Prediction Indicators for y
+df_test$Pred_Y <- ifelse(df_test$PredProb >= 0.5, 1, 0)
+
+caret::confusionMatrix(as.factor(df_test$y_int),as.factor(df_test$Pred_Y), positive = '1') #this function and package auto computes a lot of the metrics
+# accuracy: 74%
+# sens: 80%
+# Spec: 70%
+
+plot(glmf)
+
+
+##DETER4MINING BEST THRESHOLD FOR BEST SENSITIVITY
+library(ROCR)
+library(car)
+library(tidyverse)
+# Predict the probability (p) of x23strat
+glmftest <- glm(formula = y_int ~ age + contact + campaign + previous + poutcome + 
+    emp.var.rate + cons.price.idx + cons.conf.idx, family = binomial, 
+    data = df_test)
+probabilities <- predict(glmftest, type = "response")
+predicted.classes <- ifelse(probabilities > 0.5, 1, 0)
+
+#### end of default cutoff of 0.5
+#### optimal cutoff
+
+#ROC Curve and AUC
+pred <- prediction(probabilities,df_test$y_int) 
+pred
+#Predicted Probability and True Classification
+
+# area under curve
+auc <- round(as.numeric(performance(pred, measure = "auc")@y.values),3)
+auc
+
+#plotting the ROC curve and computing AUC
+perf <- performance(pred, "tpr","fpr")
+plot(perf,colorize = T, main = "ROC Curve")
+text(0.5,0.5, paste("AUC:", auc))
+
+# computing threshold for cutoff to best trade off sensitivity and specificity
+#first sensitivity
+plot(unlist(performance(pred, "sens")@x.values), unlist(performance(pred, "sens")@y.values), 
+     type="l", lwd=2, 
+     ylab="Sensitivity", xlab="Cutoff", main = paste("Maximized Cutoff\n","AUC: ",auc))
+
+par(new=TRUE) # plot another line in same plot
+
+#second specificity
+plot(unlist(performance(pred, "spec")@x.values), unlist(performance(pred, "spec")@y.values), 
+     type="l", lwd=2, col='red', ylab="", xlab="")
+axis(4, at=seq(0,1,0.2)) #specificity axis labels
+mtext("Specificity",side=4, col='red')
+
+#find where the lines intersect
+min.diff <-which.min(abs(unlist(performance(pred, "sens")@y.values) - unlist(performance(pred, "spec")@y.values)))
+min.x<-unlist(performance(pred, "sens")@x.values)[min.diff]
+min.y<-unlist(performance(pred, "spec")@y.values)[min.diff]
+optimal <-min.x #this is the optimal points to best trade off sensitivity and specificity
+
+abline(h = min.y, lty = 3)
+abline(v = min.x, lty = 3)
+text(min.x,0,paste("optimal threshold=",round(optimal,2)), pos = 3)
+
+
+
+
+
+##OPTIMAL CUTOFF FOR BEST SENSITIVITY and specificity
+#create Prediction Indicators for y
+df_test$Pred_Y_best <- ifelse(df_test$PredProb >= 0.46, 1, 0)
+caret::confusionMatrix(as.factor(df_test$y_int),as.factor(df_test$Pred_Y_best), positive = '1') #this function and package auto computes a lot of the metrics
+# accuracy: 73%
+# sens: 77%
+# Spec: 70%
+
+
+## best sensitivity
+df_test$Pred_Y_sens <- ifelse(df_test$PredProb >= 0.3, 1, 0)
+caret::confusionMatrix(as.factor(df_test$Pred_Y_sens), as.factor(df_test$y_int), positive = '1') #this function and package auto computes a lot of the metrics
+# accuracy: 60%
+# sens: 85%
+# Spec: 34%
+
+
+
 ```

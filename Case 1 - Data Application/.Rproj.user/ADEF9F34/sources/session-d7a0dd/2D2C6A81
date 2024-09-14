@@ -1,0 +1,28 @@
+{
+    "id": "2D2C6A81",
+    "path": null,
+    "project_path": null,
+    "type": "object_explorer",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1726337787893.0,
+    "source_on_save": false,
+    "relative_order": 7,
+    "properties": {
+        "id": "e43dc0a47ac14960b25ffd642e4735d2",
+        "name": "pred",
+        "title": "pred",
+        "language": "R",
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1725404692,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1726337787893,
+    "read_only": false,
+    "read_only_alternatives": []
+}
