@@ -6,7 +6,7 @@ output: pdf_document
 ---
 
 ```{r libraries, include=FALSE}
-#idk what i was going to use so i added everything that seemed useful
+#| echo: false
 library(caret)
 library(here)
 library(lattice)
@@ -16,51 +16,56 @@ library(MASS)
 library(tidyverse)
 library(corrplot)
 library(car)
+library(ROCR)
+library(dplyr)
 ```
 
-####Created a template below and we can modify titles as progress####
-
-# Executive Summary
-
-Brief introduction of problem. Summarizes key findings. Summarizes insights behind key findings.
-
-# Our Problem
-
-Clear description of the problem, from an application and theoretical point of view. Outlines the report.
-
-# Literature Review
-
-Discusses and cites existing works in the theoretical and application realm.
-
-# Methods
-
-Discusses types of variables, sample size, and sampling techniques (if any). Discusses the model(s) and its assumptions and limitations.
-
-# Data
-
-Discusses how data was handled, i.e. cleaned and preprocessed. Discusses distributions, correlations, etc.
-
 ```{r Loading Data, warning=FALSE}
-#df1 <- read.csv2("~/MS Data Applications/wk03 Bank Case Study/bank-additional.csv")
-
-##### We can delete the path above once we confirm if works for you guys #####
-
 #| echo: false
 getwd() #open R project file to have the same file path
 df1 = read.csv2('Data/bank-additional.csv') # Reading the csv from the location above
 
 ```
 
+# Bank Marketing Case Study
+
+# Executive Summary:
+
+*Brief introduction of problem. Summarizes key findings. Summarizes insights behind key findings.*
+
+# Our Problem:
+
+*Clear description of the problem, from an application and theoretical point of view. Outlines the report.*
+
+# Literature Review:
+
+*Discusses and cites existing works in the theoretical and application realm.*
+
+# Methods:
+
+*Discusses types of variables, sample size, and sampling techniques (if any). Discusses the model(s) and its assumptions and limitations.*
+
+In this case study, the dataset contains 21 variables related to client demographic and financial information, with a total of 4,119 observations. To achieve our objectives, we applied two methodologies: Linear Regression (LM) and Generalized Linear Model (GLM).
+
+## Linear Regression Model
+
+## Logistic Regression Model
+
+# Data:
+
+*Discusses how data was handled, i.e. cleaned and preprocessed. Discusses distributions, correlations, etc.*
+
 ## Data Structure
 
 ```{r Data Structure}
-str(df1) #Should we keep in final paper or hide?
+#| echo: false
+str(df1) #probably remove from final paper
 ```
 
 ## Data Cleanup
 
 ```{r Data Cleanup}
-str(df1)
+#| echo: false
 #change y into factor 
 df1$y<-as.factor(df1$y)
 df1$job<- as.factor(df1$job)
@@ -90,54 +95,100 @@ df1$married_ind <- ifelse(df1$marital == 'married', 1, 0)
 
 ```
 
-# Results
+## Data Exploration
 
-Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.
+### Correlation
 
-# Conclusions
-
-Concludes with a summary of the aim and results. Discusses alternative methods that can be used.
-
-```{r}
-#Exploring variables 
-
-
-
-
+```{r Correlation}
+#| echo: false
 # is there high correlation in any of our numeric variables
 df_num <- dplyr::select_if(df1, is.numeric)
 M = cor(df_num)
 #looks like there is higher correlation between pdays and previous but it is under .6 
-corrplot(M, method = c("number"))
+corrplot(M, method = c("color"))
 
+```
+
+### Unbalanced Dataset
+
+```{r Unbalanced Dataset}
+#| echo: false
 #data is unbalanced 3.6k no, 451 yes
 summary(df1$y)
 ```
 
+### Distribution (Numeric Variables)
 
+```{r Distribution of Numerical Variables}
+#| echo: false
+#testing variables
+##we can discuss this ones during class
+bank_long = df1 %>% 
+  dplyr::select(age, campaign, previous, emp.var.rate, cons.price.idx, 
+                cons.conf.idx, euribor3m, nr.employed) %>%
+  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Value")
 
+#facet view
+ggplot(bank_long, aes(x = Value)) +
+  geom_histogram(bins = 30, fill = "gray", color = "black") +
+  facet_wrap(~ Variable, scales = "free") +
+  theme_minimal() +
+  labs(title = "Distribution of Variables", x = NULL, y = "Frequency") +
+  theme(strip.text = element_text(face = "bold"))
+```
 
-```{r model building}
+### Distribution (Categorical Variables)
+
+```{r Distribution of Categorical Variables}
+#| echo: false
+#testing variables
+##we can discuss this ones during class
+bank_long_cat = df1 %>% 
+  dplyr::select(job, marital, education, default, housing, loan, contact, poutcome) %>% 
+  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Value")
+
+#facet view
+ggplot(bank_long_cat, aes(x = Value)) +
+  geom_bar(fill = "gray", color = "black") +
+  facet_wrap(~ Variable, scales = "free", ncol = 3) +
+  theme_minimal() +
+  labs(title = "Distribution of Categorical Variables", x = NULL, y = "Count") +
+  theme(strip.text = element_text(face = "bold"), axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+# Results:
+
+*Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.*
+
+# Conclusions:
+
+*Concludes with a summary of the aim and results. Discusses alternative methods that can be used.*
+
+```{r Variable Selection}
 #keep variables I want for Modeling
 df2 <- df1 %>% select(age,job, married_ind, education, default, housing, loan, contact, campaign, 
                       ppdays_ind, previous, poutcome, emp.var.rate, cons.price.idx, cons.conf.idx, 
                       euribor3m, nr.employed, y, y_int) 
+```
 
-
+```{r Balancing Dataset}
 # since data is unbalanced we should take a more balanced sample
 set.seed(42) 
 df_y_y = df2 %>% filter(y == "yes")
 df_y_n = df2 %>% filter(y == "no")
 sample_y = sample_n(df_y_n, nrow(df_y_y))
 df_bal = rbind(df_y_y,sample_y)
+```
 
+```{r Data Splitting}
 # test and train split
-
 df_bal_split <- sample(nrow(df_bal),0.8*nrow(df_bal),replace = F) # Setting training sample to be 80% of the data
 df_train <- df_bal[df_bal_split,]
 df_test <- df_bal[-df_bal_split,]
+```
 
-
+```{r model building}
 # creating binary numeric variable for linear model
 str(df2)
 
@@ -188,9 +239,7 @@ plot(glmf)
 
 
 ##DETER4MINING BEST THRESHOLD FOR BEST SENSITIVITY
-library(ROCR)
-library(car)
-library(tidyverse)
+
 # Predict the probability (p) of x23strat
 glmftest <- glm(formula = y_int ~ age + contact + campaign + previous + poutcome + 
     emp.var.rate + cons.price.idx + cons.conf.idx, family = binomial, 
