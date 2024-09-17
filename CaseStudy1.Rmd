@@ -51,7 +51,8 @@ In this case study, the dataset contains 21 variables related to client demograp
 
 ## Logistic Regression Model
 
-## Adding stuff to push
+## changing the add
+
 
 # Data:
 
