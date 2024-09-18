@@ -27,42 +27,6 @@ df1 = read.csv2('Data/bank-additional.csv') # Reading the csv from the location 
 
 ```
 
-# Bank Marketing Case Study
-
-# Executive Summary:
-
-*Brief introduction of problem. Summarizes key findings. Summarizes insights behind key findings.*
-
-# Our Problem:
-
-*Clear description of the problem, from an application and theoretical point of view. Outlines the report.*
-
-# Literature Review:
-
-*Discusses and cites existing works in the theoretical and application realm.*
-
-# Methods:
-
-*Discusses types of variables, sample size, and sampling techniques (if any). Discusses the model(s) and its assumptions and limitations.*
-
-In this case study, the dataset contains 21 variables related to client demographic and financial information, with a total of 4,119 observations. To achieve our objectives, we applied two methodologies: Linear Regression (LM) and Generalized Linear Model (GLM).
-
-<<<<<<< HEAD
-=======
-## Linear Regression Model
-
-## Logistic Regression Model
-
-## changing the add
-
->>>>>>> origin/main
-
-# Data:
-
-# Results:
-### Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.
-
-*Discusses how data was handled, i.e. cleaned and preprocessed. Discusses distributions, correlations, etc.*
 
 ## Data Structure
 
@@ -320,3 +284,40 @@ caret::confusionMatrix(as.factor(df_test$Pred_Y_sens), as.factor(df_test$y_int),
 
 
 ```
+# REPORTING OUTLINE/UPDATES
+
+
+# Bank Marketing Case Study
+
+# Executive Summary:
+
+*Brief introduction of problem. Summarizes key findings. Summarizes insights behind key findings.*
+
+# Our Problem:
+
+*Clear description of the problem, from an application and theoretical point of view. Outlines the report.*
+
+# Literature Review:
+
+*Discusses and cites existing works in the theoretical and application realm.*
+
+# Methods:
+
+*Discusses types of variables, sample size, and sampling techniques (if any). Discusses the model(s) and its assumptions and limitations.*
+
+In this case study, the dataset contains 21 variables related to client demographic and financial information, with a total of 4,119 observations. To achieve our objectives, we applied two methodologies: Linear Regression (LM) and Generalized Linear Model (GLM).
+
+
+
+# Data:
+
+# Results:
+### Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.
+
+Here we will be discussing the outputs from our two models we applied to the data set to best predict if a client will subscribe (yes/no) to a term deposit (y). We first begin with a simple linear model using all the variables we decided to select for our modeling. Here is the following output from our linear model.
+
+
+
+*Discusses how data was handled, i.e. cleaned and preprocessed. Discusses distributions, correlations, etc.*
+
+
