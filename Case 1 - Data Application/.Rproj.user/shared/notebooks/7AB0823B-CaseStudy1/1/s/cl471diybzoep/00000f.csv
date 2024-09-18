@@ -1,0 +1,7 @@
+"0","#| echo: false"
+"0","# is there high correlation in any of our numeric variables"
+"0","df_num <- dplyr::select_if(df1, is.numeric)"
+"0","M = cor(df_num)"
+"0","#looks like there is higher correlation between pdays and previous but it is under .6 "
+"0","corrplot(M, method = c(""color""))"
+"0",""

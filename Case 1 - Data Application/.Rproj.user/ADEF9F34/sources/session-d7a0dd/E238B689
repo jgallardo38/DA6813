@@ -3,7 +3,7 @@
     "path": "C:/Users/alexm/Downloads/Pract 2/DA6813/CaseStudy1.Rmd",
     "project_path": null,
     "type": "r_markdown",
-    "hash": "0",
+    "hash": "1353199362",
     "contents": "",
     "dirty": false,
     "created": 1726330433098.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "260,0",
-        "scrollLine": "249"
+        "cursorPosition": "54,0",
+        "scrollLine": "38"
     },
     "folds": "",
-    "lastKnownWriteTime": 1726342032,
+    "lastKnownWriteTime": 1726619323,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1726342032805,
+    "last_content_update": 1726619323925,
     "read_only": false,
     "read_only_alternatives": []
 }

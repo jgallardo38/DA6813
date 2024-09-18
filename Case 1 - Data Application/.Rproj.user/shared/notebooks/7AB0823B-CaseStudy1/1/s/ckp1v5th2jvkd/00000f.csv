@@ -1,0 +1,4 @@
+"0","#keep variables I want for Modeling"
+"0","df2 <- df1 %>% select(age,job, married_ind, education, default, housing, loan, contact, campaign, "
+"0","                      ppdays_ind, previous, poutcome, emp.var.rate, cons.price.idx, cons.conf.idx, "
+"0","                      euribor3m, nr.employed, y, y_int) "

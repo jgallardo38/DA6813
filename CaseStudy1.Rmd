@@ -47,13 +47,11 @@ df1 = read.csv2('Data/bank-additional.csv') # Reading the csv from the location 
 
 In this case study, the dataset contains 21 variables related to client demographic and financial information, with a total of 4,119 observations. To achieve our objectives, we applied two methodologies: Linear Regression (LM) and Generalized Linear Model (GLM).
 
-## Linear Regression Model
-
-## Logistic Regression Model
-
-## Adding stuff to push
 
 # Data:
+
+# Results:
+### Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.
 
 *Discusses how data was handled, i.e. cleaned and preprocessed. Discusses distributions, correlations, etc.*
 
