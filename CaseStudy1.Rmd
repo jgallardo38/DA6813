@@ -314,7 +314,11 @@ In this case study, the dataset contains 21 variables related to client demograp
 # Results:
 ### Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.
 
+<<<<<<< HEAD
 Here we will be discussing the outputs from our two models we applied to the data set to best predict if a client will subscribe (yes/no) to a term deposit (y). We first begin with a simple linear model using all the variables we decided to select for our modeling. Here is the following output for our linear model.
+=======
+Here we will be discussing the outputs from our two models we applied to the data set to best predict if a client will subscribe (yes/no) to a term deposit (y). We first begin with a simple linear model using all the variables we decided to select for our modeling. Here is the following output from our linear model.
+>>>>>>> origin/main
 
 
 
