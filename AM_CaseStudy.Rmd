@@ -291,13 +291,32 @@ caret::confusionMatrix(as.factor(df_test$Pred_Y_sens), as.factor(df_test$y_int),
 
 # Executive Summary:
 
+Key Findings
+Client Behavior Insights: Features related to client behavior, such as the number of previous contacts and the duration of the last call, strongly influence the likelihood of subscription. A longer call duration often correlates with a positive outcome.
+
+Macroeconomic Factors: Variables such as employment variation rate and the Euribor rate (a 3-month interest rate) also impact the decision. A positive employment outlook increases subscription rates.
+
+Campaign Features: The total number of contacts and the success of previous campaigns (poutcome) are critical indicators for future success. Clients who had successful outcomes in previous campaigns were more likely to subscribe again.
+
 *Brief introduction of problem. Summarizes key findings. Summarizes insights behind key findings.*
 
 # Our Problem:
 
+Problem Description (Application and Theoretical)
+From an application perspective, this problem addresses optimizing marketing campaign effectiveness for financial institutions. By accurately predicting the likelihood of a subscription, banks can reduce unnecessary contact costs, improve customer targeting, and maximize return on investment in marketing efforts.
+
+From a theoretical standpoint, this problem falls into the domain of binary classification and predictive analytics. Models such as logistic regression, decision trees, and machine learning classifiers like random forests can be applied. The use of client behavior and macroeconomic data offers a rich feature space that improves model accuracy. Theoretical considerations such as class imbalance, feature importance, and multicollinearity play important roles in model selection and evaluation.
+
 *Clear description of the problem, from an application and theoretical point of view. Outlines the report.*
 
 # Literature Review:
+
+Existing Works in Theoretical and Application Realm
+Research in customer retention and subscription prediction in financial services has been extensive. Theoretical studies such as Predictive Modeling for Marketing Campaigns by Chapman et al. (2015) highlight the utility of machine learning in optimizing campaign performance. Studies like Moro et al. (2014) applied data mining techniques on a similar Portuguese banking dataset, showing that models like logistic regression and decision trees provide high accuracy in predicting term deposit subscriptions.
+
+Further, works such as Customer Analytics in Financial Services by Homburg et al. (2016) validate the impact of socioeconomic variables like employment rates and consumer confidence on consumer financial decisions. These existing works provide a solid foundation for applying predictive models in this case study.
+
+By leveraging these insights, this project aims to contribute to the growing body of research that helps financial institutions fine-tune their marketing strategies through data-driven approaches.
 
 *Discusses and cites existing works in the theoretical and application realm.*
 
