@@ -23,10 +23,9 @@ library(dplyr)
 ```{r Loading Data, warning=FALSE}
 #| echo: false
 getwd() #open R project file to have the same file path
-df1 = read.csv2('Data/bank-additional.csv') # Reading the csv from the location above
+df1 = read.csv2("C:/Users/crew_/OneDrive/Escritorio/Guille/UTSA Masters/MSDA/DA6813/bank-additional.csv") # Reading the csv from the location above
 
 ```
-
 
 ## Data Structure
 
@@ -88,6 +87,7 @@ corrplot(M, method = c("color"))
 #| echo: false
 #data is unbalanced 3.6k no, 451 yes
 summary(df1$y)
+summary(df_bal$y)
 ```
 
 ### Distribution (Numeric Variables)
@@ -284,39 +284,20 @@ caret::confusionMatrix(as.factor(df_test$Pred_Y_sens), as.factor(df_test$y_int),
 
 
 ```
-# REPORTING OUTLINE/UPDATES
 
+# REPORTING OUTLINE/UPDATES
 
 # Bank Marketing Case Study
 
 # Executive Summary:
 
-Key Findings
-Client Behavior Insights: Features related to client behavior, such as the number of previous contacts and the duration of the last call, strongly influence the likelihood of subscription. A longer call duration often correlates with a positive outcome.
-
-Macroeconomic Factors: Variables such as employment variation rate and the Euribor rate (a 3-month interest rate) also impact the decision. A positive employment outlook increases subscription rates.
-
-Campaign Features: The total number of contacts and the success of previous campaigns (poutcome) are critical indicators for future success. Clients who had successful outcomes in previous campaigns were more likely to subscribe again.
-
 *Brief introduction of problem. Summarizes key findings. Summarizes insights behind key findings.*
 
 # Our Problem:
 
-Problem Description (Application and Theoretical)
-From an application perspective, this problem addresses optimizing marketing campaign effectiveness for financial institutions. By accurately predicting the likelihood of a subscription, banks can reduce unnecessary contact costs, improve customer targeting, and maximize return on investment in marketing efforts.
-
-From a theoretical standpoint, this problem falls into the domain of binary classification and predictive analytics. Models such as logistic regression, decision trees, and machine learning classifiers like random forests can be applied. The use of client behavior and macroeconomic data offers a rich feature space that improves model accuracy. Theoretical considerations such as class imbalance, feature importance, and multicollinearity play important roles in model selection and evaluation.
-
 *Clear description of the problem, from an application and theoretical point of view. Outlines the report.*
 
 # Literature Review:
-
-Existing Works in Theoretical and Application Realm
-Research in customer retention and subscription prediction in financial services has been extensive. Theoretical studies such as Predictive Modeling for Marketing Campaigns by Chapman et al. (2015) highlight the utility of machine learning in optimizing campaign performance. Studies like Moro et al. (2014) applied data mining techniques on a similar Portuguese banking dataset, showing that models like logistic regression and decision trees provide high accuracy in predicting term deposit subscriptions.
-
-Further, works such as Customer Analytics in Financial Services by Homburg et al. (2016) validate the impact of socioeconomic variables like employment rates and consumer confidence on consumer financial decisions. These existing works provide a solid foundation for applying predictive models in this case study.
-
-By leveraging these insights, this project aims to contribute to the growing body of research that helps financial institutions fine-tune their marketing strategies through data-driven approaches.
 
 *Discusses and cites existing works in the theoretical and application realm.*
 
@@ -326,116 +307,48 @@ By leveraging these insights, this project aims to contribute to the growing bod
 
 In this case study, the dataset contains 21 variables related to client demographic and financial information, with a total of 4,119 observations. To achieve our objectives, we applied two methodologies: Linear Regression (LM) and Generalized Linear Model (GLM).
 
-
-
 # Data:
 
+*Discusses how data was handled, i.e. cleaned and preprocessed. Discusses distributions, correlations, etc.*
+
+The dataset provided is well-structured, containing 21 variables related to client demographics and financial information, with a total of 4,119 observations. Although there are no *NA* values, we did notice a few columns containing 'Unknown' entries. In terms of variable types, we treated some as factors and others as numeric, as many of the original variables were labeled as characters. For instance, we converted *education* from a character to a factor and *emp.var.rate* from a character to numeric.
+
+Add stuff for correlation
+
+**Correlation**
+
+```{r Correlation}
+#| echo: false
+# is there high correlation in any of our numeric variables
+df_num <- dplyr::select_if(df1, is.numeric)
+M = cor(df_num)
+#looks like there is higher correlation between pdays and previous but it is under .6 
+corrplot(M, method = c("color"))
+
+```
+
+
+Our dataset was unbalanced, with 3,668 records labeled as *No* and only 451 labeled as *Yes* in the y variable. To address this imbalance, we created a balanced dataset by splitting the data between the *Yes* and *No* labels and then sampling from each group. This resulted in a new dataset called *df_bal,* which contains an equal number of records. Balancing the data will help us train our model more effectively by ensuring that it doesn't become biased towards the majority class. This should improve the model's ability to accurately predict both outcomes and perform well across various metrics.
+
+**Unbalanced Dataset**
+
+```{r}
+#| echo: false
+summary(df1$y)
+
+```
+
+**Balanced Dataset**
+
+```{r}
+#| echo: false
+summary(df_bal$y)
+```
+
+For our final dataset, we selected 19 variables initially. After applying backward elimination, we narrowed it down to 7 key variables for our final model. The variables we retained are: age, poutcome, campaign, cons.conf.idx, contact, cons.price.idx, and emp.var.rate.
+
 # Results:
+
 ### Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.
 
-Here we will be discussing the outputs from our two models we applied to the data set to best predict if a client will subscribe (yes/no) to a term deposit (y). We first begin with a simple linear model and use the backwards selection method to keep only the significant variables. Here is the output:
-```{r}
-summary(lmf)
-```
-We see that the model kept age, contact, campaign, poutcome, emp.var.rate, cons.price.idx, and cons.conf.idx.
-Right away, we see that the model is significant but the Adjusted R-Square is pretty low at 27%. This is expected since our dependent variable is binary and a Linear regression model is not the best option for binary outcomes.
-
-With this conclusion we move on to a Logistic regression model since this gives us a prediction for our dependent variable. This will help us predict if a client will subscribe to a term deposit (indicated as 1).
-
-The final model that is created using the backwards selection method is the follwoing:
-```{r}
-summary(glmf)
-```
-Before we get into the confusion matrix. Lets explain the relationship of each independent variable to the dependent variable. We first compute the exponential of our coefficient ratio to get the odds ratio.
-```{r}
-exp(coef(glmf)['age'])
-exp(coef(glmf)['contacttelephone'])
-exp(coef(glmf)['campaign            '])
-exp(coef(glmf)['previous             '])
-exp(coef(glmf)['poutcomenonexistent  '])
-exp(coef(glmf)['poutcomesuccess      '])
-exp(coef(glmf)['emp.var.rate'])
-exp(coef(glmf)['cons.price.idx'])
-exp(coef(glmf)['cons.conf.idx'])
-
-```
-
-we see an extra year of age increased the odds of a client subscribing to a term deposit  by a factor of 1.02
-
-we see for those with contacttelephone increases the odds of a client subscribing to a term deposit  by a factor of 0.38.
-
-we see an extra increase of emp.var.rate increased the odds of a client subscribing to a term deposit  by a factor of 0.41
-
-we see an extra increaase of cons.price.idx increased the odds of a client subscribing to a term deposit  by a factor of 6.12.
-
-we see an extra increase of cons.conf.idx increased the odds of a client subscribing to a term deposit  by a factor of 1.06.
-
-
-
-
-With this model, we then use it on our test sample to see how well it predicts and determine the most optimal cutoff to have the highest Specificity and Sensitivity. Here are the following results:
-```{r}
-# Predict the probability (p) of 
-glmftest <- glm(formula = y_int ~ age + contact + campaign + previous + poutcome + 
-    emp.var.rate + cons.price.idx + cons.conf.idx, family = binomial, 
-    data = df_test)
-probabilities <- predict(glmftest, type = "response")
-predicted.classes <- ifelse(probabilities > 0.5, 1, 0)
-
-#### end of default cutoff of 0.5
-#### optimal cutoff
-
-#ROC Curve and AUC
-pred <- prediction(probabilities,df_test$y_int) 
-pred
-#Predicted Probability and True Classification
-
-# area under curve
-auc <- round(as.numeric(performance(pred, measure = "auc")@y.values),3)
-auc
-
-#plotting the ROC curve and computing AUC
-perf <- performance(pred, "tpr","fpr")
-plot(perf,colorize = T, main = "ROC Curve")
-text(0.5,0.5, paste("AUC:", auc))
-
-# computing threshold for cutoff to best trade off sensitivity and specificity
-#first sensitivity
-plot(unlist(performance(pred, "sens")@x.values), unlist(performance(pred, "sens")@y.values), 
-     type="l", lwd=2, 
-     ylab="Sensitivity", xlab="Cutoff", main = paste("Maximized Cutoff\n","AUC: ",auc))
-
-par(new=TRUE) # plot another line in same plot
-
-#second specificity
-plot(unlist(performance(pred, "spec")@x.values), unlist(performance(pred, "spec")@y.values), 
-     type="l", lwd=2, col='red', ylab="", xlab="")
-axis(4, at=seq(0,1,0.2)) #specificity axis labels
-mtext("Specificity",side=4, col='red')
-
-#find where the lines intersect
-min.diff <-which.min(abs(unlist(performance(pred, "sens")@y.values) - unlist(performance(pred, "spec")@y.values)))
-min.x<-unlist(performance(pred, "sens")@x.values)[min.diff]
-min.y<-unlist(performance(pred, "spec")@y.values)[min.diff]
-optimal <-min.x #this is the optimal points to best trade off sensitivity and specificity
-
-abline(h = min.y, lty = 3)
-abline(v = min.x, lty = 3)
-text(min.x,0,paste("optimal threshold=",round(optimal,2)), pos = 3)
-
-
-##OPTIMAL CUTOFF FOR BEST SENSITIVITY and specificity
-#create Prediction Indicators for y
-df_test$Pred_Y_best <- ifelse(df_test$PredProb >= 0.46, 1, 0)
-caret::confusionMatrix(as.factor(df_test$y_int),as.factor(df_test$Pred_Y_best), positive = '1') #this function and package auto computes a lot of the metrics
-# accuracy: 73%
-# sens: 77%
-# Spec: 70%
-``` 
-We see the best cutoff for the highest sensitivity and specificity is at 0.46. With this, the performance of our model on the test data set is 73% accurate overall, and our sensitivity is 77% with a specificity of 70%
-
-
-
-
-
-
+Here we will be discussing the outputs from our two models we applied to the data set to best predict if a client will subscribe (yes/no) to a term deposit (y). We first begin with a simple linear model using all the variables we decided to select for our modeling. Here is the following output from our linear model.
