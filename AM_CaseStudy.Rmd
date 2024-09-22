@@ -1,7 +1,7 @@
 ---
-title: "Case Study 1"
-author: "Alex Martinez"
-date: "2024-09-10"
+title: "Bank Marketing Case Study"
+author: "Alex Martinez, Josh Gardner, Cameron Playle, and Guillermo Gallardo"
+date: "2024-09-22"
 output: pdf_document
 ---
 
@@ -20,24 +20,19 @@ library(ROCR)
 library(dplyr)
 ```
 
-```{r Loading Data, warning=FALSE}
+```{r Loading Data, warning=FALSE, results='hide'}
 #| echo: false
 getwd() #open R project file to have the same file path
 df1 = read.csv2('Data/bank-additional.csv') # Reading the csv from the location above
 
 ```
 
-
-## Data Structure
-
-```{r Data Structure}
+```{r Data Structure, results='hide'}
 #| echo: false
 str(df1) #probably remove from final paper
 ```
 
-## Data Cleanup
-
-```{r Data Cleanup}
+```{r Data Cleanup, results='hide'}
 #| echo: false
 #change y into factor 
 df1$y<-as.factor(df1$y)
@@ -68,31 +63,16 @@ df1$married_ind <- ifelse(df1$marital == 'married', 1, 0)
 
 ```
 
-## Data Exploration
 
-### Correlation
-
-```{r Correlation}
-#| echo: false
-# is there high correlation in any of our numeric variables
-df_num <- dplyr::select_if(df1, is.numeric)
-M = cor(df_num)
-#looks like there is higher correlation between pdays and previous but it is under .6 
-corrplot(M, method = c("color"))
-
-```
-
-### Unbalanced Dataset
-
-```{r Unbalanced Dataset}
+```{r Unbalanced Dataset, results='hide'}
 #| echo: false
 #data is unbalanced 3.6k no, 451 yes
 summary(df1$y)
 ```
 
-### Distribution (Numeric Variables)
+### 
 
-```{r Distribution of Numerical Variables}
+```{r Distribution of Numerical Variables, results='hide', fig.show='hide'}
 #| echo: false
 #testing variables
 ##we can discuss this ones during class
@@ -110,9 +90,7 @@ ggplot(bank_long, aes(x = Value)) +
   theme(strip.text = element_text(face = "bold"))
 ```
 
-### Distribution (Categorical Variables)
-
-```{r Distribution of Categorical Variables}
+```{r Distribution of Categorical Variables, results='hide', fig.show='hide'}
 #| echo: false
 #testing variables
 ##we can discuss this ones during class
@@ -130,22 +108,16 @@ ggplot(bank_long_cat, aes(x = Value)) +
 
 ```
 
-# Results:
-
-*Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.*
-
-# Conclusions:
-
-*Concludes with a summary of the aim and results. Discusses alternative methods that can be used.*
-
-```{r Variable Selection}
+```{r Variable Selection, results='hide'}
+#| echo: false
 #keep variables I want for Modeling
 df2 <- df1 %>% select(age,job, married_ind, education, default, housing, loan, contact, campaign, 
                       ppdays_ind, previous, poutcome, emp.var.rate, cons.price.idx, cons.conf.idx, 
                       euribor3m, nr.employed, y, y_int) 
 ```
 
-```{r Balancing Dataset}
+```{r Balancing Dataset, results='hide'}
+#| echo: false
 # since data is unbalanced we should take a more balanced sample
 set.seed(42) 
 df_y_y = df2 %>% filter(y == "yes")
@@ -154,14 +126,16 @@ sample_y = sample_n(df_y_n, nrow(df_y_y))
 df_bal = rbind(df_y_y,sample_y)
 ```
 
-```{r Data Splitting}
+```{r Data Splitting, results='hide'}
+#| echo: false
 # test and train split
 df_bal_split <- sample(nrow(df_bal),0.8*nrow(df_bal),replace = F) # Setting training sample to be 80% of the data
 df_train <- df_bal[df_bal_split,]
 df_test <- df_bal[-df_bal_split,]
 ```
 
-```{r model building}
+```{r model building, warning=FALSE,results='hide', fig.show='hide'}
+#| echo: false
 # creating binary numeric variable for linear model
 str(df2)
 
@@ -284,15 +258,12 @@ caret::confusionMatrix(as.factor(df_test$Pred_Y_sens), as.factor(df_test$y_int),
 
 
 ```
+
 # REPORTING OUTLINE/UPDATES
-
-
-# Bank Marketing Case Study
 
 # Executive Summary:
 
-Key Findings
-Client Behavior Insights: Features related to client behavior, such as the number of previous contacts and the duration of the last call, strongly influence the likelihood of subscription. A longer call duration often correlates with a positive outcome.
+Key Findings Client Behavior Insights: Features related to client behavior, such as the number of previous contacts and the duration of the last call, strongly influence the likelihood of subscription. A longer call duration often correlates with a positive outcome.
 
 Macroeconomic Factors: Variables such as employment variation rate and the Euribor rate (a 3-month interest rate) also impact the decision. A positive employment outlook increases subscription rates.
 
@@ -302,8 +273,7 @@ Campaign Features: The total number of contacts and the success of previous camp
 
 # Our Problem:
 
-Problem Description (Application and Theoretical)
-From an application perspective, this problem addresses optimizing marketing campaign effectiveness for financial institutions. By accurately predicting the likelihood of a subscription, banks can reduce unnecessary contact costs, improve customer targeting, and maximize return on investment in marketing efforts.
+Problem Description (Application and Theoretical) From an application perspective, this problem addresses optimizing marketing campaign effectiveness for financial institutions. By accurately predicting the likelihood of a subscription, banks can reduce unnecessary contact costs, improve customer targeting, and maximize return on investment in marketing efforts.
 
 From a theoretical standpoint, this problem falls into the domain of binary classification and predictive analytics. Models such as logistic regression, decision trees, and machine learning classifiers like random forests can be applied. The use of client behavior and macroeconomic data offers a rich feature space that improves model accuracy. Theoretical considerations such as class imbalance, feature importance, and multicollinearity play important roles in model selection and evaluation.
 
@@ -311,8 +281,7 @@ From a theoretical standpoint, this problem falls into the domain of binary clas
 
 # Literature Review:
 
-Existing Works in Theoretical and Application Realm
-Research in customer retention and subscription prediction in financial services has been extensive. Theoretical studies such as Predictive Modeling for Marketing Campaigns by Chapman et al. (2015) highlight the utility of machine learning in optimizing campaign performance. Studies like Moro et al. (2014) applied data mining techniques on a similar Portuguese banking dataset, showing that models like logistic regression and decision trees provide high accuracy in predicting term deposit subscriptions.
+Existing Works in Theoretical and Application Realm Research in customer retention and subscription prediction in financial services has been extensive. Theoretical studies such as Predictive Modeling for Marketing Campaigns by Chapman et al. (2015) highlight the utility of machine learning in optimizing campaign performance. Studies like Moro et al. (2014) applied data mining techniques on a similar Portuguese banking dataset, showing that models like logistic regression and decision trees provide high accuracy in predicting term deposit subscriptions.
 
 Further, works such as Customer Analytics in Financial Services by Homburg et al. (2016) validate the impact of socioeconomic variables like employment rates and consumer confidence on consumer financial decisions. These existing works provide a solid foundation for applying predictive models in this case study.
 
@@ -326,27 +295,61 @@ By leveraging these insights, this project aims to contribute to the growing bod
 
 In this case study, the dataset contains 21 variables related to client demographic and financial information, with a total of 4,119 observations. To achieve our objectives, we applied two methodologies: Linear Regression (LM) and Generalized Linear Model (GLM).
 
-
-
 # Data:
 
+The dataset provided is well-structured, containing 21 variables related to client demographics and financial information, with a total of 4,119 observations. Although there are no *NA* values, we did notice a few columns containing 'Unknown' entries. In terms of variable types, we treated some as factors and others as numeric, as many of the original variables were labeled as characters. For instance, we converted *education* from a character to a factor and *emp.var.rate* from a character to numeric.
+
+Add stuff for correlation
+
+```{r Correlation}
+#| echo: false
+# is there high correlation in any of our numeric variables
+df_num <- dplyr::select_if(df1, is.numeric)
+M = cor(df_num)
+#looks like there is higher correlation between pdays and previous but it is under .6 
+corrplot(M, method = c("color"))
+
+```
+
+Our dataset was unbalanced, with 3,668 records labeled as *No* and only 451 labeled as *Yes* in the y variable. To address this imbalance, we created a balanced dataset by splitting the data between the *Yes* and *No* labels and then sampling from each group. This resulted in a new dataset called *df_bal,* which contains an equal number of records. Balancing the data will help us train our model more effectively by ensuring that it doesn't become biased towards the majority class. This should improve the model's ability to accurately predict both outcomes and perform well across various metrics.
+
+**Unbalanced Dataset**
+
+```{r}
+#| echo: false
+summary(df1$y)
+
+```
+
+**Balanced Dataset**
+
+```{r}
+#| echo: false
+summary(df_bal$y)
+```
+
+For our final dataset, we selected 19 variables initially. After applying backward elimination, we narrowed it down to 7 key variables for our final model. The variables we retained are: age, poutcome, campaign, cons.conf.idx, contact, cons.price.idx, and emp.var.rate.
+
 # Results:
-### Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.
 
 Here we will be discussing the outputs from our two models we applied to the data set to best predict if a client will subscribe (yes/no) to a term deposit (y). We first begin with a simple linear model and use the backwards selection method to keep only the significant variables. Here is the output:
+
 ```{r}
 summary(lmf)
 ```
-We see that the model kept age, contact, campaign, poutcome, emp.var.rate, cons.price.idx, and cons.conf.idx.
-Right away, we see that the model is significant but the Adjusted R-Square is pretty low at 27%. This is expected since our dependent variable is binary and a Linear regression model is not the best option for binary outcomes.
+
+We see that the model kept age, contact, campaign, poutcome, emp.var.rate, cons.price.idx, and cons.conf.idx. Right away, we see that the model is significant but the Adjusted R-Square is pretty low at 27%. This is expected since our dependent variable is binary and a Linear regression model is not the best option for binary outcomes.
 
 With this conclusion we move on to a Logistic regression model since this gives us a prediction for our dependent variable. This will help us predict if a client will subscribe to a term deposit (indicated as 1).
 
-The final model that is created using the backwards selection method is the follwoing:
+The final model that is created using the backwards selection method is the following:
+
 ```{r}
 summary(glmf)
 ```
+
 Before we get into the confusion matrix. Lets explain the relationship of each independent variable to the dependent variable. We first compute the exponential of our coefficient ratio to get the odds ratio.
+
 ```{r}
 exp(coef(glmf)['age'])
 exp(coef(glmf)['contacttelephone'])
@@ -360,21 +363,20 @@ exp(coef(glmf)['cons.conf.idx'])
 
 ```
 
-we see an extra year of age increased the odds of a client subscribing to a term deposit  by a factor of 1.02
+we see an extra year of age increased the odds of a client subscribing to a term deposit by a factor of 1.02
 
-we see for those with contacttelephone increases the odds of a client subscribing to a term deposit  by a factor of 0.38.
+we see for those with contacttelephone increases the odds of a client subscribing to a term deposit by a factor of 0.38.
 
-we see an extra increase of emp.var.rate increased the odds of a client subscribing to a term deposit  by a factor of 0.41
+we see an extra increase of emp.var.rate increased the odds of a client subscribing to a term deposit by a factor of 0.41
 
-we see an extra increaase of cons.price.idx increased the odds of a client subscribing to a term deposit  by a factor of 6.12.
+we see an extra increaase of cons.price.idx increased the odds of a client subscribing to a term deposit by a factor of 6.12.
 
-we see an extra increase of cons.conf.idx increased the odds of a client subscribing to a term deposit  by a factor of 1.06.
-
-
-
+we see an extra increase of cons.conf.idx increased the odds of a client subscribing to a term deposit by a factor of 1.06.
 
 With this model, we then use it on our test sample to see how well it predicts and determine the most optimal cutoff to have the highest Specificity and Sensitivity. Here are the following results:
-```{r}
+
+```{r, warning=FALSE}
+
 # Predict the probability (p) of 
 glmftest <- glm(formula = y_int ~ age + contact + campaign + previous + poutcome + 
     emp.var.rate + cons.price.idx + cons.conf.idx, family = binomial, 
@@ -431,11 +433,12 @@ caret::confusionMatrix(as.factor(df_test$y_int),as.factor(df_test$Pred_Y_best), 
 # accuracy: 73%
 # sens: 77%
 # Spec: 70%
-``` 
+```
+
 We see the best cutoff for the highest sensitivity and specificity is at 0.46. With this, the performance of our model on the test data set is 73% accurate overall, and our sensitivity is 77% with a specificity of 70%
 
+# Conclusion
 
+Based on our analysis, the logistic regression model (GLM) outperformed the linear regression model (LM) in predicting whether a client will subscribe to a term deposit. The GLM achieved higher accuracy with strong sensitivity, specificity, and an AUC of 0.818. It effectively handled the binary nature of the response variable and identified significant predictors such as age, contact type, campaign history, previous outcome, employment variation rate, and consumer price and confidence indexes. In comparison, the LM struggled with the binary outcome, showing poor fit since linear regression is designed for continuous variables. Therefore, the GLM is the best option between the two.
 
-
-
-
+For future improvements, exploring methods like Random Forests could enhance model performance. Random Forests handle the binary nature of the data well, capturing non-linear relationships and interactions. By averaging multiple decision trees, they reduce overfitting and improve prediction accuracy, while also identifying the most important predictors for client subscriptions.
