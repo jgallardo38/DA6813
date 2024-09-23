@@ -63,7 +63,6 @@ df1$married_ind <- ifelse(df1$marital == 'married', 1, 0)
 
 ```
 
-
 ```{r Unbalanced Dataset, results='hide'}
 #| echo: false
 #data is unbalanced 3.6k no, 451 yes
@@ -259,25 +258,17 @@ caret::confusionMatrix(as.factor(df_test$Pred_Y_sens), as.factor(df_test$y_int),
 
 ```
 
-# REPORTING OUTLINE/UPDATES
-
 # Executive Summary:
 
-Key Findings Client Behavior Insights: Features related to client behavior, such as the number of previous contacts and the duration of the last call, strongly influence the likelihood of subscription. A longer call duration often correlates with a positive outcome.
+Our best model was the logistic regression model, which identified **age, poutcome, campaign, previous, cons.conf.idx, contact, cons.price.idx, and emp.var.rate** as the most significant predictors for our response variable.
 
-Macroeconomic Factors: Variables such as employment variation rate and the Euribor rate (a 3-month interest rate) also impact the decision. A positive employment outlook increases subscription rates.
+The two most significant variables were **emp.var.rate** and **cons.price.idx**. The model achieved an overall **accuracy of 73%**, with a **sensitivity of 77%** and a **specificity of 70%.**
 
-Campaign Features: The total number of contacts and the success of previous campaigns (poutcome) are critical indicators for future success. Clients who had successful outcomes in previous campaigns were more likely to subscribe again.
-
-*Brief introduction of problem. Summarizes key findings. Summarizes insights behind key findings.*
+Macroeconomic factors such as the employment variation rate and the 3-month Euribor rate influence subscription decisions. A positive employment outlook tends to increase the likelihood of subscriptions.
 
 # Our Problem:
 
-Problem Description (Application and Theoretical) From an application perspective, this problem addresses optimizing marketing campaign effectiveness for financial institutions. By accurately predicting the likelihood of a subscription, banks can reduce unnecessary contact costs, improve customer targeting, and maximize return on investment in marketing efforts.
-
-From a theoretical standpoint, this problem falls into the domain of binary classification and predictive analytics. Models such as logistic regression, decision trees, and machine learning classifiers like random forests can be applied. The use of client behavior and macroeconomic data offers a rich feature space that improves model accuracy. Theoretical considerations such as class imbalance, feature importance, and multicollinearity play important roles in model selection and evaluation.
-
-*Clear description of the problem, from an application and theoretical point of view. Outlines the report.*
+The primary problem this case study addresses is identifying the variables that significantly influence whether customers will subscribe ('yes') or not ('no') to a bank term deposit product. From a theoretical perspective, the study aims to determine which predictor variables significantly impact the likelihood of a customer subscribing to a bank term deposit, using statistical models such as logistic and linear regression to analyze the data
 
 # Literature Review:
 
@@ -287,27 +278,27 @@ Further, works such as Customer Analytics in Financial Services by Homburg et al
 
 By leveraging these insights, this project aims to contribute to the growing body of research that helps financial institutions fine-tune their marketing strategies through data-driven approaches.
 
-*Discusses and cites existing works in the theoretical and application realm.*
-
 # Methods:
 
-*Discusses types of variables, sample size, and sampling techniques (if any). Discusses the model(s) and its assumptions and limitations.*
+**Type of Variables:** When loading the data, the majority of the variables were imported as character variables. We had to adjust them to match the information given to us. After making the necessary changes, we ended up with factors, numeric, and integer variables. We also created dummy variables, which we will discuss later.
 
-In this case study, the dataset contains 21 variables related to client demographic and financial information, with a total of 4,119 observations. To achieve our objectives, we applied two methodologies: Linear Regression (LM) and Generalized Linear Model (GLM).
+**Sample Size and Techniques:** The sample size is 4,119 with 21 variables. Due to the sample being unbalanced towards a "no" answer on the y variable, we resampled the data. This process reduced the 4,119 samples to slightly over 900, which we used to train our model.
+
+**Models, Assumptions, and Limitations:** During this case study, we used two models: a linear model and a logistic model. The assumptions for the linear model include linearity, independence, homoscedasticity, and no multicollinearity. For the logistic model, the requirements are a binary dependent variable, independence of observations, linearity of the logit, no multicollinearity, and no perfect separation.
 
 # Data:
 
 The dataset provided is well-structured, containing 21 variables related to client demographics and financial information, with a total of 4,119 observations. Although there are no *NA* values, we did notice a few columns containing 'Unknown' entries. In terms of variable types, we treated some as factors and others as numeric, as many of the original variables were labeled as characters. For instance, we converted *education* from a character to a factor and *emp.var.rate* from a character to numeric.
 
-Add stuff for correlation
+Upon checking for multicollinearity, we identified that only one pair of variables---pdays and duration---exceeded our predefined collinearity threshold. Given this multicollinearity, along with other considerations regarding the duration variable, we made the decision to exclude duration from the final model.
 
-```{r Correlation}
+```{r Correlation, fig.width=4.25, fig.height=4.25}
 #| echo: false
-# is there high correlation in any of our numeric variables
+par(mfrow=c(1,1), mar=c(.5, .5, .5, .5), pin=c(3, 3))  # Adjust pin to control plot size
+
 df_num <- dplyr::select_if(df1, is.numeric)
 M = cor(df_num)
-#looks like there is higher correlation between pdays and previous but it is under .6 
-corrplot(M, method = c("color"))
+corrplot(M, method = "color")
 
 ```
 
@@ -351,6 +342,7 @@ summary(glmf)
 Before we get into the confusion matrix. Lets explain the relationship of each independent variable to the dependent variable. We first compute the exponential of our coefficient ratio to get the odds ratio.
 
 ```{r}
+#| echo: false
 exp(coef(glmf)['age'])
 exp(coef(glmf)['contacttelephone'])
 exp(coef(glmf)['campaign            '])
@@ -363,17 +355,19 @@ exp(coef(glmf)['cons.conf.idx'])
 
 ```
 
-we see an extra year of age increased the odds of a client subscribing to a term deposit by a factor of 1.02
+An additional year of age increases the odds of a client subscribing to a term deposit by a factor of 1.02. Key findings from the model include:
 
-we see for those with contacttelephone increases the odds of a client subscribing to a term deposit by a factor of 0.38.
+-   Age: Each additional year increases the odds by 1.02.
 
-we see an extra increase of emp.var.rate increased the odds of a client subscribing to a term deposit by a factor of 0.41
+-   contactelephone: Clients contacted via telephone have reduced odds, decreasing by a factor of 0.38.
 
-we see an extra increaase of cons.price.idx increased the odds of a client subscribing to a term deposit by a factor of 6.12.
+-   emp.var.rate: A higher rate decreases the odds by 0.41.
 
-we see an extra increase of cons.conf.idx increased the odds of a client subscribing to a term deposit by a factor of 1.06.
+-   cons.price.idx: An increase significantly boosts the odds by 6.12.
 
-With this model, we then use it on our test sample to see how well it predicts and determine the most optimal cutoff to have the highest Specificity and Sensitivity. Here are the following results:
+-   cons.conf.idx: Each increase raises the odds by 1.06.
+
+Using this model on our test sample, we then evaluated its performance and identified the optimal cutoff to maximize both specificity and sensitivity.
 
 ```{r, warning=FALSE}
 
@@ -442,3 +436,5 @@ We see the best cutoff for the highest sensitivity and specificity is at 0.46. W
 Based on our analysis, the logistic regression model (GLM) outperformed the linear regression model (LM) in predicting whether a client will subscribe to a term deposit. The GLM achieved higher accuracy with strong sensitivity, specificity, and an AUC of 0.818. It effectively handled the binary nature of the response variable and identified significant predictors such as age, contact type, campaign history, previous outcome, employment variation rate, and consumer price and confidence indexes. In comparison, the LM struggled with the binary outcome, showing poor fit since linear regression is designed for continuous variables. Therefore, the GLM is the best option between the two.
 
 For future improvements, exploring methods like Random Forests could enhance model performance. Random Forests handle the binary nature of the data well, capturing non-linear relationships and interactions. By averaging multiple decision trees, they reduce overfitting and improve prediction accuracy, while also identifying the most important predictors for client subscriptions.
+
+The key insight from the analysis is that for every increase in the consumer price index (CPI), customers are 6.12 times more likely to subscribe to term deposits. Based on this finding, the bank should enhance its outreach efforts during periods of rising CPI to maximize subscriptions.
