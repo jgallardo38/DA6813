@@ -23,7 +23,7 @@ library(dplyr)
 ```{r Loading Data, warning=FALSE}
 #| echo: false
 getwd() #open R project file to have the same file path
-df1 = read.csv2("C:/Users/crew_/OneDrive/Escritorio/Guille/UTSA Masters/MSDA/DA6813/bank-additional.csv") # Reading the csv from the location above
+df1 = read.csv2("Data/bank-additional.csv") # Reading the csv from the location above
 
 ```
 
@@ -87,7 +87,7 @@ corrplot(M, method = c("color"))
 #| echo: false
 #data is unbalanced 3.6k no, 451 yes
 summary(df1$y)
-summary(df_bal$y)
+
 ```
 
 ### Distribution (Numeric Variables)
@@ -103,6 +103,23 @@ bank_long = df1 %>%
 
 #facet view
 ggplot(bank_long, aes(x = Value)) +
+  geom_histogram(bins = 30, fill = "gray", color = "black") +
+  facet_wrap(~ Variable, scales = "free") +
+  theme_minimal() +
+  labs(title = "Distribution of Variables", x = NULL, y = "Frequency") +
+  theme(strip.text = element_text(face = "bold"))
+
+#normalizing the data
+df_norm <- df1
+numeric_columns <- sapply(df_norm, is.numeric)
+df_norm[numeric_columns] <- scale(df_norm[numeric_columns])
+
+bank_long_norm = df_norm %>% 
+  dplyr::select(age, campaign, previous, emp.var.rate, cons.price.idx, 
+                cons.conf.idx, euribor3m, nr.employed) %>%
+  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Value")
+
+ggplot(bank_long_norm, aes(x = Value)) +
   geom_histogram(bins = 30, fill = "gray", color = "black") +
   facet_wrap(~ Variable, scales = "free") +
   theme_minimal() +
@@ -142,7 +159,12 @@ ggplot(bank_long_cat, aes(x = Value)) +
 #keep variables I want for Modeling
 df2 <- df1 %>% select(age,job, married_ind, education, default, housing, loan, contact, campaign, 
                       ppdays_ind, previous, poutcome, emp.var.rate, cons.price.idx, cons.conf.idx, 
-                      euribor3m, nr.employed, y, y_int) 
+                      euribor3m, nr.employed, y, y_int)
+
+# selecting for center and scaled data
+df2_norm <- df_norm %>% select(age,job, married_ind, education, default, housing, loan, contact, campaign, 
+                      ppdays_ind, previous, poutcome, emp.var.rate, cons.price.idx, cons.conf.idx, 
+                      euribor3m, nr.employed, y, y_int)
 ```
 
 ```{r Balancing Dataset}
@@ -152,6 +174,7 @@ df_y_y = df2 %>% filter(y == "yes")
 df_y_n = df2 %>% filter(y == "no")
 sample_y = sample_n(df_y_n, nrow(df_y_y))
 df_bal = rbind(df_y_y,sample_y)
+summary(df_bal$y)
 ```
 
 ```{r Data Splitting}
@@ -297,6 +320,9 @@ caret::confusionMatrix(as.factor(df_test$Pred_Y_sens), as.factor(df_test$y_int),
 
 *Clear description of the problem, from an application and theoretical point of view. Outlines the report.*
 
+The primary problem this case study addresses is identifying the variables that significantly influence whether customers will subscribe ('yes') or not ('no') to a bank term deposit product.
+From a theoretical perspective, the study aims to determine which predictor variables significantly impact the likelihood of a customer subscribing to a bank term deposit, using statistical models such as logistic and linear regression to analyze the data
+
 # Literature Review:
 
 *Discusses and cites existing works in the theoretical and application realm.*
@@ -305,7 +331,15 @@ caret::confusionMatrix(as.factor(df_test$Pred_Y_sens), as.factor(df_test$y_int),
 
 *Discusses types of variables, sample size, and sampling techniques (if any). Discusses the model(s) and its assumptions and limitations.*
 
-In this case study, the dataset contains 21 variables related to client demographic and financial information, with a total of 4,119 observations. To achieve our objectives, we applied two methodologies: Linear Regression (LM) and Generalized Linear Model (GLM).
+Type of Variables:
+When loading the data, the majority of the variables were imported as character variables. We had to adjust them to match the information given to us. After making the necessary changes, we ended up with factors, numeric, and integer variables. We also created dummy variables, which we will discuss later.
+
+Sample Size and Techniques:
+The sample size is 4,119 with 21 variables. Due to the sample being unbalanced towards a "no" answer on the y variable, we resampled the data. This process reduced the 4,119 samples to slightly over 900, which we used to train our model.
+
+Models, Assumptions, and Limitations:
+During this case study, we used two models: a linear model and a logistic model. The assumptions for the linear model include linearity, independence, homoscedasticity, and no multicollinearity. For the logistic model, the requirements are a binary dependent variable, independence of observations, linearity of the logit, no multicollinearity, and no perfect separation.
+
 
 # Data:
 
