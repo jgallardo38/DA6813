@@ -1,0 +1,8 @@
+"0",""
+"0","#find where the lines intersect"
+"0","min.diff <-which.min(abs(unlist(performance(pred, ""sens"")@y.values) - unlist(performance(pred, ""spec"")@y.values)))"
+"0","min.x<-unlist(performance(pred, ""sens"")@x.values)[min.diff]"
+"0","min.y<-unlist(performance(pred, ""spec"")@y.values)[min.diff]"
+"0","optimal <-min.x #this is the optimal points to best trade off sensitivity and specificity"
+"0",""
+"0","abline(h = min.y, lty = 3)"

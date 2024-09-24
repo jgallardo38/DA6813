@@ -1,0 +1,7 @@
+"0","#| echo: false"
+"0","# since data is unbalanced we should take a more balanced sample"
+"0","set.seed(42) "
+"0","df_y_y = df2 %>% filter(y == ""yes"")"
+"0","df_y_n = df2 %>% filter(y == ""no"")"
+"0","sample_y = sample_n(df_y_n, nrow(df_y_y))"
+"0","df_bal = rbind(df_y_y,sample_y)"
