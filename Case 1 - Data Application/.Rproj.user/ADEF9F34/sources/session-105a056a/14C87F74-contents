@@ -263,11 +263,8 @@ caret::confusionMatrix(as.factor(df_test$Pred_Y_sens), as.factor(df_test$y_int),
 
 # Executive Summary:
 
-Key Findings Client Behavior Insights: Features related to client behavior, such as the number of previous contacts and the duration of the last call, strongly influence the likelihood of subscription. A longer call duration often correlates with a positive outcome.
-
-Macroeconomic Factors: Variables such as employment variation rate and the Euribor rate (a 3-month interest rate) also impact the decision. A positive employment outlook increases subscription rates.
-
-Campaign Features: The total number of contacts and the success of previous campaigns (poutcome) are critical indicators for future success. Clients who had successful outcomes in previous campaigns were more likely to subscribe again.
+Logistic model was best
+we used xyz variables and abc varibles were the most sinificant in predicting y
 
 *Brief introduction of problem. Summarizes key findings. Summarizes insights behind key findings.*
 
@@ -442,3 +439,5 @@ We see the best cutoff for the highest sensitivity and specificity is at 0.46. W
 Based on our analysis, the logistic regression model (GLM) outperformed the linear regression model (LM) in predicting whether a client will subscribe to a term deposit. The GLM achieved higher accuracy with strong sensitivity, specificity, and an AUC of 0.818. It effectively handled the binary nature of the response variable and identified significant predictors such as age, contact type, campaign history, previous outcome, employment variation rate, and consumer price and confidence indexes. In comparison, the LM struggled with the binary outcome, showing poor fit since linear regression is designed for continuous variables. Therefore, the GLM is the best option between the two.
 
 For future improvements, exploring methods like Random Forests could enhance model performance. Random Forests handle the binary nature of the data well, capturing non-linear relationships and interactions. By averaging multiple decision trees, they reduce overfitting and improve prediction accuracy, while also identifying the most important predictors for client subscriptions.
+
+
