@@ -1,0 +1,75 @@
+---
+title: "Bookbinder Study Case"
+author: "Alex Martinez, Josh Gardner, Cameron Playle, and Guillermo Gallardo"
+date: "2024-09-25"
+output: pdf_document
+---
+
+```{r, Libraries, echo=FALSE, warning=FALSE, }
+library(ggplot2)
+library(dplyr)
+library(corrplot)
+library(readxl)
+library(tidyverse)
+```
+
+```{r Loading Data, echo=FALSE, warning=FALSE}
+getwd() #open R project file to have the same file path
+bbc_test = read_xlsx('Data/BBBC-Test.xlsx') # change variable name to match code
+bbc_train = read_xlsx('Data/BBBC-Train.xlsx')  # change variable name to match code
+```
+
+
+```{r, Data Structure, echo=FALSE}
+str(bbc_test)
+```
+
+##### **Paper Starts Here**
+
+# Executive Summary
+
+*Brief introduction of problem. Summarizes key findings. Summarizes insights behind key findings.*
+
+# Our Problem
+
+*Clear description of the problem, from an application and theoretical point of view. Outlines the report.*
+
+# Literature Review
+
+*Discusses and cites existing works in the theoretical and application realm.*
+
+# Methods
+
+*Discusses types of variables, sample size, and sampling techniques (if any). Discusses the model(s) and its assumptions and limitations.*
+
+Our dataset was gives to us divided into training and test sets. The training set includes 1,600 observations, while the test set contains 2,300 observations. The dataset consists of 12 variables, with one variable (observation) being removed. Two variables were converted into factors: gender and choice, with choice serving as our response variable. The remaining variables are numerical. For some of these numerical variables, including Last_purchased, we will transform them into categorical variables to enhance our modeling process.
+
+Add stuff about unabalanced dataset
+
+Add stuff about the models we will use: GLM, SVM, segmentation, etc
+
+
+
+# Data
+
+*Discusses how data was handled, i.e. cleaned and preprocessed. Discusses distributions, correlations, etc.*
+
+## Correlation
+
+```{r, Correlation Plot echo=FALSE}
+#Added this correlation plot in case we need it
+
+cor_train = bbc_train %>% 
+  select(-Observation, -Gender, - Choice)
+#dplyr::select_if(train, is.numeric)
+M = cor(cor_train)
+corrplot(M, method = c("number"))
+```
+
+# Results
+
+*Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.*
+
+# Conclusion
+
+*Concludes with a summary of the aim and results. Discusses alternative methods that can be used.*
