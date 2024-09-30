@@ -1,0 +1,4 @@
+"0","df1 = read.csv2(""~/bank-additional.csv"") # Reading the csv from the location above
+"
+"2","Error in file(file, ""rt"") : cannot open the connection
+"

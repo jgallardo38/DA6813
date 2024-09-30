@@ -1,0 +1,2 @@
+"0","bbc_train <- read_xlsx(""C:/Users/alexm/Downloads/Pract 2/DA6813/Data/BBBC-Train.xlsx"")"
+"0","bbc_test <- read_xlsx(""C:/Users/alexm/Downloads/Pract 2/DA6813/Data/BBBC-Test.xlsx"")"

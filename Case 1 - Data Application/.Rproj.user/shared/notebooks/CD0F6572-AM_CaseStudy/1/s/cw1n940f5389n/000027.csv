@@ -1,6 +1,0 @@
-"0",""
-"0","# computing threshold for cutoff to best trade off sensitivity and specificity"
-"0","#first sensitivity"
-"0","plot(unlist(performance(pred, ""sens"")@x.values), unlist(performance(pred, ""sens"")@y.values), "
-"0","     type=""l"", lwd=2, "
-"0","     ylab=""Sensitivity"", xlab=""Cutoff"", main = paste(""Maximized Cutoff\n"",""AUC: "",auc))"

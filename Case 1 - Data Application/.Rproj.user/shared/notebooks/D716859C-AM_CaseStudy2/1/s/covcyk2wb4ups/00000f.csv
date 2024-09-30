@@ -1,0 +1,7 @@
+"0","getwd() #open R project file to have the same file path"
+"1","[1]"
+"1"," ""C:/Users/alexm/Downloads/Pract 2/DA6813"""
+"1","
+"
+"0","train <- read_xlsx(""C:/Users/alexm/Downloads/Pract 2/DA6813/Data/BBBC-train.xlsx"")"
+"0","test <- read_xlsx(""C:/Users/alexm/Downloads/Pract 2/DA6813/Data/BBBC-test.xlsx"")"
