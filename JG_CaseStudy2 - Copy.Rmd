@@ -1,0 +1,136 @@
+---
+title: "Untitled"
+author: "Joshua Gardner"
+date: "2024-09-24"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(cluster) 
+library(factoextra) 
+library(dendextend)
+library(readxl)
+library(dplyr)
+library(car)
+library(ggplot2)
+```
+
+```{r}
+bbc_train <- read_xlsx("C:/Users/Josh/Documents/Algor1/BBBC-Train.xlsx")
+bbc_test <- read_xlsx("C:/Users/Josh/Documents/Algor1/BBBC-Test.xlsx")
+```
+
+```{r}
+str(bbc_train)
+bbc_train$Choice <- as.factor(bbc_train$Choice)
+bbc_train$Gender <- as.factor(bbc_train$Gender)
+summary(bbc_train$Choice)
+bbc_t_num <- dplyr::select_if(bbc_train, is.numeric)
+M = cor(bbc_t_num)
+corrplot(M, method = c("number"))
+colSums(is.na(bbc_train))
+#checked quartile to determine where cutoff should be
+summary(bbc_train$First_purchase)
+summary(bbc_train$Last_purchase)
+#change first/last purchase to cat variables 
+bbc_train <- bbc_train %>%  mutate(First_purchase_quartile = case_when(
+    First_purchase < 12 ~ 1,
+    First_purchase >= 12 & First_purchase < 23 ~ 2,
+    First_purchase >= 23 & First_purchase < 30 ~ 3,
+    First_purchase >= 30 ~ 4
+  ))
+
+bbc_train <- bbc_train %>%  mutate(Last_purchase_quartile = case_when(
+    Last_purchase < 12 ~ 1,
+    Last_purchase >= 12 & Last_purchase < 23 ~ 2,
+    Last_purchase >= 23 & Last_purchase < 30 ~ 3,
+    Last_purchase >= 30 ~ 4
+  ))
+```
+```{r}
+bbbc_long = bbc_t_num %>% 
+  dplyr::select(Amount_purchased, Frequency, Last_purchase, First_purchase, P_Child, 
+                P_Youth, P_Cook, P_DIY, P_Art) %>%
+  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Value")
+
+ggplot(bbbc_long, aes(x = Value)) +
+  geom_histogram(bins = 30, fill = "gray", color = "black") +
+  facet_wrap(~ Variable, scales = "free") +
+  theme_minimal() +
+  labs(title = "Distribution of Variables", x = NULL, y = "Frequency") +
+  theme(strip.text = element_text(face = "bold"))
+
+ggplot(bbbc_long, aes(x = Value)) +
+  geom_boxplot(fill = "gray", color = "black") +
+  facet_wrap(~ Variable, scales = "free") +
+  theme_minimal() +
+  labs(title = "Distribution of Variables", x = NULL, y = "Frequency") +
+  theme(strip.text = element_text(face = "bold"))
+```
+```{r}
+glm.bbbc <- glm(Choice ~ . -First_purchase - Observation, data = bbc_train, family = binomial)
+summary(glm.bbbc)
+glm.step.bbc = step(glm.bbbc, direction = "backward") # stepwise backward elim.
+summary(glm.step.bbc)
+```
+```{r SVM}
+summary(bbc_train)
+#balance training 
+set.seed(42)
+bc_train_y = bbc_train %>% filter(Choice == 1)
+bc_train_n = bbc_train %>% filter(Choice == 0)
+sample_y = sample_n(bc_train_n, nrow(bc_train_y))
+bc_train_bal = rbind(bc_train_y,sample_y)
+
+#no need to split data because its already split (maybe i run a svm with and w/out balancing)
+formula <- Choice~.
+
+tuned_bal <- tune.svm(formula, data= bc_train_bal, gamma = seq(.01,.1, by = .01),
+                  cost = seq(.1, 1, by = .1))
+tuned_unbal <- tune.svm(formula, data= bbc_train, gamma = seq(.01,.1, by = .01),
+                  cost = seq(.1, 1, by = .1))
+
+
+#find best params
+tuned_bal$best.parameters
+tuned_unbal$best.parameters
+
+#
+bal_svm <- svm(formula = formula,data= bc_train_bal, gamma = tuned_bal$best.parameters$cost, cost = tuned_bal$best.parameters$cost)
+
+unbal_svm <- svm(formula = formula,data= bbc_train, gamma = tuned_unbal$best.parameters$cost, cost = tuned_unbal$best.parameters$cost)
+
+summary(bal_svm)
+summary(unbal_svm)
+
+# need to convert variables like in training 
+bbc_test$Choice <- as.factor(bbc_test$Choice)
+bbc_test$Gender <- as.factor(bbc_test$Gender)
+
+bbc_test <- bbc_test %>%  mutate(First_purchase_quartile = case_when(
+    First_purchase < 12 ~ 1,
+    First_purchase >= 12 & First_purchase < 23 ~ 2,
+    First_purchase >= 23 & First_purchase < 30 ~ 3,
+    First_purchase >= 30 ~ 4
+  ))
+
+bbc_test <- bbc_test %>%  mutate(Last_purchase_quartile = case_when(
+    Last_purchase < 12 ~ 1,
+    Last_purchase >= 12 & Last_purchase < 23 ~ 2,
+    Last_purchase >= 23 & Last_purchase < 30 ~ 3,
+    Last_purchase >= 30 ~ 4
+  ))
+#predictions
+bal_svm_pred <- predict(bal_svm, bbc_test, type = "Response")
+table(pred=bal_svm_pred, true=bbc_test$Choice)
+
+
+unbal_svm_pred <- predict(unbal_svm, bbc_test, type = "Response")
+table(pred=unbal_svm_pred, true=bbc_test$Choice)
+
+#confusion
+caret::confusionMatrix(factor(bal_svm_pred), bbc_test$Choice)
+caret::confusionMatrix(factor(unbal_svm_pred), bbc_test$Choice)
+```
+
