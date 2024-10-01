@@ -1,0 +1,70 @@
+---
+title: "Untitled"
+author: "Joshua Gardner"
+date: "2024-09-24"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(cluster) 
+library(factoextra) 
+library(dendextend)
+library(readxl)
+library(dplyr)
+library(car)
+library(ggplot2)
+```
+
+```{r}
+bbc_train <- read_xlsx("C:/Users/alexm/Downloads/Pract 2/DA6813/Data/BBBC-Train.xlsx")
+bbc_test <- read_xlsx("C:/Users/alexm/Downloads/Pract 2/DA6813/Data/BBBC-Test.xlsx")
+```
+
+```{r}
+str(bbc_train)
+bbc_train$Choice <- as.factor(bbc_train$Choice)
+bbc_train$Gender <- as.factor(bbc_train$Gender)
+summary(bbc_train$Choice)
+bbc_t_num <- dplyr::select_if(bbc_train, is.numeric)
+M = cor(bbc_t_num)
+corrplot(M, method = c("number"))
+colSums(is.na(bbc_train))
+#checked quartile to determine where cutoff should be
+summary(bbc_train$First_purchase)
+summary(bbc_train$Last_purchase)
+#change first/last purchase to cat variables 
+bbc_train %>%  mutate(First_purchase_quartile = case_when(
+    First_purchase < 12 ~ 1,
+    First_purchase >= 12 & age < 23 ~ 2,
+    First_purchase >= 23 & age < 30 ~ 3,
+    First_purchase >= 30 ~ 4
+  ))
+```
+```{r}
+bbbc_long = bbc_t_num %>% 
+  dplyr::select(Amount_purchased, Frequency, Last_purchase, First_purchase, P_Child, 
+                P_Youth, P_Cook, P_DIY, P_Art) %>%
+  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Value")
+
+ggplot(bbbc_long, aes(x = Value)) +
+  geom_histogram(bins = 30, fill = "gray", color = "black") +
+  facet_wrap(~ Variable, scales = "free") +
+  theme_minimal() +
+  labs(title = "Distribution of Variables", x = NULL, y = "Frequency") +
+  theme(strip.text = element_text(face = "bold"))
+
+ggplot(bbbc_long, aes(x = Value)) +
+  geom_boxplot(fill = "gray", color = "black") +
+  facet_wrap(~ Variable, scales = "free") +
+  theme_minimal() +
+  labs(title = "Distribution of Variables", x = NULL, y = "Frequency") +
+  theme(strip.text = element_text(face = "bold"))
+```
+```{r}
+glm.bbbc <- glm(Choice ~ . -First_purchase - Observation, data = bbc_train, family = binomial)
+summary(glm.bbbc)
+glm.step.bbc = step(glm.bbbc, direction = "backward") # stepwise backward elim.
+summary(glm.step.bbc)
+```
+

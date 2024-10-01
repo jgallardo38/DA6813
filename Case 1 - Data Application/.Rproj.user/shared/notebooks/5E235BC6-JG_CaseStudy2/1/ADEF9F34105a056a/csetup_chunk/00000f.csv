@@ -1,0 +1,37 @@
+"0","library(tidyverse)"
+"0","library(cluster) "
+"0","library(factoextra) "
+"2","Warning: package ‘factoextra’ was built under R version 4.3.3"
+"2","Welcome! Want to learn more? See two factoextra-related books at https://goo.gl/ve3WBa
+"
+"0","library(dendextend)"
+"2","Warning: package ‘dendextend’ was built under R version 4.3.3"
+"2","
+---------------------
+Welcome to dendextend version 1.17.1
+Type citation('dendextend') for how to cite the package.
+
+Type browseVignettes(package = 'dendextend') for the package vignette.
+The github page is: https://github.com/talgalili/dendextend/
+
+Suggestions and bug-reports can be submitted at: https://github.com/talgalili/dendextend/issues
+You may ask questions at stackoverflow, use the r and dendextend tags: 
+	 https://stackoverflow.com/questions/tagged/dendextend
+
+	To suppress this message use:  suppressPackageStartupMessages(library(dendextend))
+---------------------
+
+"
+"2","
+Attaching package: ‘dendextend’
+
+"
+"2","The following object is masked from ‘package:stats’:
+
+    cutree
+
+"
+"0","library(readxl)"
+"0","library(dplyr)"
+"0","library(car)"
+"0","library(ggplot2)"

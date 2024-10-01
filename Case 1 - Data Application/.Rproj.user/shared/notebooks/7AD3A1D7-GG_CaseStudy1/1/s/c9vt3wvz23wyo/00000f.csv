@@ -1,0 +1,54 @@
+"0","#| echo: false"
+"0","library(caret)"
+"2","Warning: package ‘caret’ was built under R version 4.3.3"
+"2","Loading required package: lattice
+"
+"2","
+Attaching package: ‘caret’
+
+"
+"2","The following object is masked from ‘package:purrr’:
+
+    lift
+
+"
+"0","library(here)"
+"2","Warning: package ‘here’ was built under R version 4.3.3"
+"2","here() starts at C:/Users/alexm/Downloads/Pract 2/DA6813/Case 1 - Data Application
+"
+"0","library(lattice)"
+"0","library(ggplot2)"
+"0","library(logistf)"
+"2","Warning: package ‘logistf’ was built under R version 4.3.3"
+"2","Warning: ABI version mismatch: 
+lme4 was built with Matrix ABI version 1
+Current Matrix ABI version is 0
+Please re-install lme4 from source or restore original ‘Matrix’ package"
+"0","library(MASS)"
+"2","
+Attaching package: ‘MASS’
+
+"
+"2","The following object is masked from ‘package:dplyr’:
+
+    select
+
+"
+"0","library(tidyverse)"
+"0","library(corrplot)"
+"2","Warning: package ‘corrplot’ was built under R version 4.3.3"
+"2","corrplot 0.92 loaded
+"
+"0","library(car)"
+"0","library(ROCR)"
+"2","Warning: package ‘ROCR’ was built under R version 4.3.3"
+"2","
+Attaching package: ‘ROCR’
+
+"
+"2","The following object is masked from ‘package:prediction’:
+
+    prediction
+
+"
+"0","library(dplyr)"

@@ -1,0 +1,7 @@
+"0",""
+"0","ggplot(bbbc_long, aes(x = Value)) +"
+"0","  geom_boxplot(fill = ""gray"", color = ""black"") +"
+"0","  facet_wrap(~ Variable, scales = ""free"") +"
+"0","  theme_minimal() +"
+"0","  labs(title = ""Distribution of Variables"", x = NULL, y = ""Frequency"") +"
+"0","  theme(strip.text = element_text(face = ""bold""))"

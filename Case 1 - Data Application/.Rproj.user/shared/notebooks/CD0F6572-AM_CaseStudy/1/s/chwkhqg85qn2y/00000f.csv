@@ -1,5 +1,0 @@
-"0","#| echo: false"
-"0","# test and train split"
-"0","df_bal_split <- sample(nrow(df_bal),0.8*nrow(df_bal),replace = F) # Setting training sample to be 80% of the data"
-"0","df_train <- df_bal[df_bal_split,]"
-"0","df_test <- df_bal[-df_bal_split,]"

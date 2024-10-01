@@ -1,0 +1,347 @@
+---
+title: "CaseStudy2"
+format: html
+editor: visual
+---
+
+## libraies
+```{r}
+library(tidyverse)
+library(cluster) 
+library(factoextra) 
+library(dendextend)
+library(readxl)
+library(dplyr)
+library(car)
+library(ggplot2)
+```
+
+
+## data
+```{r}
+getwd() #open R project file to have the same file path
+train <- read_xlsx("C:/Users/alexm/Downloads/Pract 2/DA6813/Data/BBBC-train.xlsx")
+test <- read_xlsx("C:/Users/alexm/Downloads/Pract 2/DA6813/Data/BBBC-test.xlsx")
+```
+### Exploring
+```{r}
+head(train)
+str(train)
+
+hist(train$Amount_purchased)
+hist(train$Frequency)
+hist(train$Last_purchase)
+hist(train$First_purchase)
+hist(train$P_Youth)
+hist(train$P_DIY)
+```
+### logistic model
+```{r}
+### LETS TRY SAME TECHNIQUE BUT WITH LOGISTIC MODEL
+#glm model
+glm1 <- glm(Choice ~  Gender + Amount_purchased + 
+    Frequency +  + P_Child + P_Youth + 
+    P_Cook + P_DIY + P_Art
+            , data = train, family = binomial) #Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+summary(glm1)
+vif(glm1)
+
+#CREATING MODEL ON TEST TO USE AND GET PREDICTIONS
+glmT <- glm(Choice ~  Gender + Amount_purchased + 
+    Frequency +  + P_Child + P_Youth + 
+    P_Cook + P_DIY + P_Art
+            , data = test, family = binomial) #Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+summary(glmT)
+vif(glmT)
+
+# Predict the probability on train - cutoff 0.5
+test$PredProb <- predict.glm(glmT, newdata = test, type = 'response')
+
+#create Prediction Indicators for y
+test$Pred_Y <- ifelse(test$PredProb >= 0.5, 1, 0)
+
+caret::confusionMatrix(as.factor(test$Choice),as.factor(test$Pred_Y), positive = '1') #this function and 
+
+
+## 91.48 Accuracy
+## 61.11 Sensitivity
+## 91.96 Specificity
+
+#REMOVING Y_YOUTH AS ITS P-VALUE IS > 0.05
+glmTest_FINAL<- glm(Choice ~  Gender + Amount_purchased + 
+    Frequency +  + P_Child  + 
+    P_Cook + P_DIY + P_Art
+            , data = test, family = binomial) #Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+summary(glmTest_FINAL)
+vif(glmTest_FINAL)
+
+# Predict the probability on train - cutoff 0.5
+test$PredProb <- predict.glm(glmTest_FINAL, newdata = test, type = 'response')
+
+#create Prediction Indicators for y
+test$Pred_Y <- ifelse(test$PredProb >= 0.5, 1, 0)
+
+caret::confusionMatrix(as.factor(test$Choice),as.factor(test$Pred_Y), positive = '1') #this function and , positive = '1'
+
+## 91.52 Accuracy
+## 62.16 Sensitivity
+## 92.00 Specificity
+
+```
+
+## Finding most optimal cutoff for highest sensitiviy & Specificity
+```{r}
+library(prediction)
+##DETER4MINING BEST THRESHOLD FOR BEST SENSITIVITY
+
+summary(glmTest_FINAL)
+probabilities <- predict(glmTest_FINAL, type = "response")
+predicted.classes <- ifelse(probabilities > 0.5, 1, 0)
+
+#### end of default cutoff of 0.5
+#### optimal cutoff
+test
+#ROC Curve and AUC
+pred <- prediction(probabilities, test$Choice) 
+pred
+#Predicted Probability and True Classification
+
+# area under curve
+auc <- round(as.numeric(performance(pred, measure = "auc")@y.values),3)
+auc
+
+#plotting the ROC curve and computing AUC
+perf <- performance(pred, "tpr","fpr")
+plot(perf,colorize = T, main = "ROC Curve")
+text(0.5,0.5, paste("AUC:", auc))
+
+# computing threshold for cutoff to best trade off sensitivity and specificity
+#first sensitivity
+plot(unlist(performance(pred, "sens")@x.values), unlist(performance(pred, "sens")@y.values), 
+     type="l", lwd=2, 
+     ylab="Sensitivity", xlab="Cutoff", main = paste("Maximized Cutoff\n","AUC: ",auc))
+
+par(new=TRUE) # plot another line in same plot
+
+#second specificity
+plot(unlist(performance(pred, "spec")@x.values), unlist(performance(pred, "spec")@y.values), 
+     type="l", lwd=2, col='red', ylab="", xlab="")
+axis(4, at=seq(0,1,0.2)) #specificity axis labels
+mtext("Specificity",side=4, col='red')
+
+#find where the lines intersect
+min.diff <-which.min(abs(unlist(performance(pred, "sens")@y.values) - unlist(performance(pred, "spec")@y.values)))
+min.x<-unlist(performance(pred, "sens")@x.values)[min.diff]
+min.y<-unlist(performance(pred, "spec")@y.values)[min.diff]
+optimal <-min.x #this is the optimal points to best trade off sensitivity and specificity
+
+abline(h = min.y, lty = 3)
+abline(v = min.x, lty = 3)
+text(min.x,0,paste("optimal threshold=",round(optimal,2)), pos = 3)
+
+
+```
+### NEW MODEL WITH MOST OPTIMAL CUTOFF
+```{r}
+# Predict the probability on train - cutoff 0.5
+test$PredProb <- predict.glm(glmTest_FINAL, newdata = test, type = 'response')
+
+#create Prediction Indicators for y
+test$Pred_Y <- ifelse(test$PredProb >= 0.5, 1, 0)
+caret::confusionMatrix(as.factor(test$Choice),as.factor(test$Pred_Y), positive = '1') #this function and 
+
+#BEST SENSITIVITY
+## X Accuracy
+## X Sensitivity
+## X Specificity
+
+
+#original
+## 91.52 Accuracy
+## 62.16 Sensitivity
+## 92.00 Specificity
+
+```
+
+
+
+## THIS DID NOT IMPROVE MODEL SO WILL NOT CONTINUE WITH THIS
+### improving the model and creating some variables
+```{r}
+head(train)
+summary(train$First_purchase)
+summary(train$Last_purchase)
+
+train$Fst_purch_bckt <- 
+  factor(
+    case_when(
+    train$First_purchase <= 12 ~ '0-12 Mths'
+    ,train$First_purchase > 12 & train$First_purchase <= 18 ~ '13-18 Mths'
+    ,train$First_purchase > 18 & train$First_purchase <= 30 ~ '19-30 Mths'
+    ,train$First_purchase > 30 ~ '>= 31 Mths'
+    ))
+
+train$lst_purch_bckt <- 
+  factor(
+    case_when(
+    train$Last_purchase <= 1 ~ '1 Mths'
+    ,train$Last_purchase > 1 & train$Last_purchase <= 2 ~ '2 Mths'
+    ,train$Last_purchase > 2 & train$Last_purchase <= 4 ~ '3-4 Mths'
+    ,train$Last_purchase > 4 ~ '>= 5 Mths'
+    ))
+
+train$P_Child_bck <- 
+  factor(
+    case_when(
+    train$P_Child == 0 ~ '0'
+    ,train$P_Child == 1 ~ '1'
+    ,train$P_Child == 2 ~ '2'
+    ,TRUE ~ '>= 3'
+  ))
+
+train$P_Youth_bck <- 
+  factor(
+    case_when(
+    train$P_Youth == 0 ~ '0'
+    ,train$P_Youth == 1 ~ '1'
+    ,train$P_Youth == 2 ~ '2'
+    ,TRUE ~ '>= 3'
+  ))
+
+
+train$P_Cook_bck <- 
+  factor(
+    case_when(
+    train$P_Cook == 0 ~ '0'
+    ,train$P_Cook == 1 ~ '1'
+    ,train$P_Cook == 2 ~ '2'
+    ,TRUE ~ '>= 3'
+  ))
+
+
+train$P_DIY_bck <- 
+  factor(
+    case_when(
+    train$P_DIY == 0 ~ '0'
+    ,train$P_DIY == 1 ~ '1'
+    ,train$P_DIY == 2 ~ '2'
+    ,TRUE ~ '>= 3'
+  ))
+
+train$P_Art_bck <- 
+  factor(
+    case_when(
+    train$P_Art == 0 ~ '0'
+    ,train$P_Art == 1 ~ '1'
+    ,train$P_Art == 2 ~ '2'
+    ,TRUE ~ '>= 3'
+  ))
+
+str(train)
+
+
+
+#SAME DATA MANIPULATION ON test DATA IN ORDER TO PREDICT ON IT
+test$Fst_purch_bckt <- 
+  factor(
+    case_when(
+    test$First_purchase <= 12 ~ '0-12 Mths'
+    ,test$First_purchase > 12 & test$First_purchase <= 18 ~ '13-18 Mths'
+    ,test$First_purchase > 18 & test$First_purchase <= 30 ~ '19-30 Mths'
+    ,test$First_purchase > 30 ~ '>= 31 Mths'
+    ))
+
+test$lst_purch_bckt <- 
+  factor(
+    case_when(
+    test$Last_purchase <= 1 ~ '1 Mths'
+    ,test$Last_purchase > 1 & test$Last_purchase <= 2 ~ '2 Mths'
+    ,test$Last_purchase > 2 & test$Last_purchase <= 4 ~ '3-4 Mths'
+    ,test$Last_purchase > 4 ~ '>= 5 Mths'
+    ))
+
+test$P_Child_bck <- 
+  factor(
+    case_when(
+    test$P_Child == 0 ~ '0'
+    ,test$P_Child == 1 ~ '1'
+    ,test$P_Child == 2 ~ '2'
+    ,TRUE ~ '>= 3'
+  ))
+
+test$P_Youth_bck <- 
+  factor(
+    case_when(
+    test$P_Youth == 0 ~ '0'
+    ,test$P_Youth == 1 ~ '1'
+    ,test$P_Youth == 2 ~ '2'
+    ,TRUE ~ '>= 3'
+  ))
+
+
+test$P_Cook_bck <- 
+  factor(
+    case_when(
+    test$P_Cook == 0 ~ '0'
+    ,test$P_Cook == 1 ~ '1'
+    ,test$P_Cook == 2 ~ '2'
+    ,TRUE ~ '>= 3'
+  ))
+
+
+test$P_DIY_bck <- 
+  factor(
+    case_when(
+    test$P_DIY == 0 ~ '0'
+    ,test$P_DIY == 1 ~ '1'
+    ,test$P_DIY == 2 ~ '2'
+    ,TRUE ~ '>= 3'
+  ))
+
+test$P_Art_bck <- 
+  factor(
+    case_when(
+    test$P_Art == 0 ~ '0'
+    ,test$P_Art == 1 ~ '1'
+    ,test$P_Art == 2 ~ '2'
+    ,TRUE ~ '>= 3'
+  ))
+
+str(test)
+```
+
+
+### logistic model
+```{r}
+### LETS TRY SAME TECHNIQUE BUT WITH LOGISTIC MODEL
+#glm model
+glm2 <- glm(Choice ~ . -Observation -Last_purchase -First_purchase - P_Youth - P_Child - P_Cook 
+            -P_DIY-P_Art
+            , data = train, family = binomial) #Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+summary(glm2)
+vif(glm2)
+
+
+#FINAL MODEL FOR TEST DATA - TO GET PREDICTIONS
+glmf <- glm(Choice ~ . -Observation -Last_purchase -First_purchase - P_Youth - P_Child - P_Cook 
+            -P_DIY-P_Art
+            , data = test, family = binomial) #Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+summary(glmf)
+vif(glmf)
+
+
+# Predict the probability on TEST - cutoff 0.5
+test$PredProb <- predict.glm(glmf, newdata = test, type = 'response')
+
+#create Prediction Indicators for y
+test$Pred_Y <- ifelse(test$PredProb >= 0.5, 1, 0)
+
+caret::confusionMatrix(as.factor(test$Choice),as.factor(test$Pred_Y), positive = '1') #this function and 
+
+## 91.57 Accuracy
+## 62.5 Sensitivity
+## 92.08 Specificity
+
+```
+
+
