@@ -5,7 +5,7 @@ date: "2024-09-25"
 output: pdf_document
 ---
 
-```{r, Libraries, echo=FALSE, warning=FALSE, }
+```{r, Libraries, echo=FALSE, warning=FALSE, results='hide', message=FALSE}
 library(ggplot2)
 library(dplyr)
 library(corrplot)
@@ -13,14 +13,13 @@ library(readxl)
 library(tidyverse)
 ```
 
-```{r Loading Data, echo=FALSE, warning=FALSE}
+```{r Loading Data, echo=FALSE, warning=FALSE, results='hide'}
 getwd() #open R project file to have the same file path
 bbc_test = read_xlsx('Data/BBBC-Test.xlsx') # change variable name to match code
 bbc_train = read_xlsx('Data/BBBC-Train.xlsx')  # change variable name to match code
 ```
 
-
-```{r, Data Structure, echo=FALSE}
+```{r, Data Structure, echo=FALSE, warning=FALSE, results='hide'}
 str(bbc_test)
 ```
 
@@ -34,6 +33,12 @@ str(bbc_test)
 
 *Clear description of the problem, from an application and theoretical point of view. Outlines the report.*
 
+For this study case our goal is to evaluate how effective three different models are and compare them with the option of creating this campaign without a model. We are trying to determine which model will provide the best balance between cost savings and profit. By analyzing the performance of each model and comparing ti against the campaign, we will identify the most cost-effective approach that maximizes profit.
+
+The three models we are comparing are the Linear Model (LM), Generalized Linear Model (GLM), and Support Vector Machine (SVM). Although we anticipate that the linear model may not perform well, we are still interested in understanding why it may not be the best fit for this case study. This exploration will help us gain valuable insights into the limitations of the linear model in this context and guide our decision-making process.
+
+**He said that we don't have to use the 50k population for our calculation to find which way would be best for the campaign. Email everyone in the 2300 or just a group of people based on our model.**
+
 # Literature Review
 
 *Discusses and cites existing works in the theoretical and application realm.*
@@ -42,28 +47,36 @@ str(bbc_test)
 
 *Discusses types of variables, sample size, and sampling techniques (if any). Discusses the model(s) and its assumptions and limitations.*
 
-Our dataset was gives to us divided into training and test sets. The training set includes 1,600 observations, while the test set contains 2,300 observations. The dataset consists of 12 variables, with one variable (observation) being removed. Two variables were converted into factors: gender and choice, with choice serving as our response variable. The remaining variables are numerical. For some of these numerical variables, including Last_purchased, we will transform them into categorical variables to enhance our modeling process.
+Our dataset was given to us divided into training and test sets. The training set includes 1,600 observations, while the test set contains 2,300 observations. The dataset consists of 12 variables, with one variable (observation) being removed. Two variables were converted into factors: gender and choice, with choice serving as our response variable. The remaining variables are numerical. For some of these numerical variables, including Last_purchased, we will transform them into categorical variables to see how it would impact our modeling process.
 
-Add stuff about unabalanced dataset
+Add stuff about unabalanced dataset?
 
-Add stuff about the models we will use: GLM, SVM, segmentation, etc
+GLM:
 
+SVM: balance vs unbalanced comparison?
 
+LDA maybe?
 
 # Data
 
 *Discusses how data was handled, i.e. cleaned and preprocessed. Discusses distributions, correlations, etc.*
 
+## Clean up
+
+We modified two variables into factors, and we created categories for ADD STUFF HERE?
+
 ## Correlation
 
-```{r, Correlation Plot echo=FALSE}
+The graph below highlights the variables with the highest correlations. We observed that *first_purchased* and *last_purchased* exhibit the strongest correlation. Based on this, we decided to create labels for these two variables to test their potential impact on our model's performance.. **ADD STUFF ABOUT RESULTS. DID IT WORK OR DID IT MAKE IT WORST?**
+
+```{r, Correlation Plot, echo=FALSE}
 #Added this correlation plot in case we need it
 
 cor_train = bbc_train %>% 
   select(-Observation, -Gender, - Choice)
 #dplyr::select_if(train, is.numeric)
 M = cor(cor_train)
-corrplot(M, method = c("number"))
+corrplot(M, method = c("color"))
 ```
 
 # Results
