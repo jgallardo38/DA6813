@@ -11,6 +11,8 @@ library(dplyr)
 library(corrplot)
 library(readxl)
 library(tidyverse)
+library(car)
+library(knitr)
 ```
 
 ```{r Loading Data, echo=FALSE, warning=FALSE, results='hide'}
@@ -83,6 +85,125 @@ corrplot(M, method = c("color"))
 
 *Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.*
 
+## GLM Results
+
+Here we will be discussing the outputs from our logistic model we applied to the data set to best predict if someone will purchase a book - Choice (1/0). We first begin with all the variables in the data set to see which independent variables are significant.
+
+```{r}
+#| echo: false
+glm1 <- glm(Choice ~ . - Observation, data = bbc_train)
+summary(glm1)
+#vif(glm1)
+```
+
+With all the dependent variables, last_Purchase has the largest VIF so we decide to remove that from our model.
+
+```{r, GLM -1 }
+#| echo: false
+glm1 <- glm(Choice ~ .-Observation-Last_purchase, data = bbc_train)
+summary(glm1)
+vif(glm1)
+```
+
+First_purchase also has a large VIF so we will remove that from our model.
+
+```{r, GLM -2}
+#| echo: false
+glm1 <- glm(Choice ~ .-Observation-Last_purchase-First_purchase, data = bbc_train)
+summary(glm1)
+vif(glm1)
+```
+
+Finally, P_Youth has a p-value \> 0.05 so we will remove that to have our final model
+
+```{r, GLM -3}
+#| echo: false
+glm1 <- glm(Choice ~ .-Observation-Last_purchase-First_purchase-P_Youth, data = bbc_train)
+summary(glm1)
+vif(glm1)
+```
+
+Before we get into the confusion matrix. Lets explain the relationship of each independent variable to the dependent variable. We first compute the exponential of our coefficient ratio to get the odds ratio.
+
+```{r}
+#| echo: false
+
+odds_ratios <- data.frame(
+  Variable = c("Gender (Male)", "Amount Purchased", "Purchase Frequency", 
+               "Child Books Purchased", "Cook Books Purchased", "DIY Books Purchased", "Art Books Purchased"),
+  Odds_Ratio = c(exp(coef(glm1)['Gender']), 
+                 exp(coef(glm1)['Amount_purchased']),
+                 exp(coef(glm1)['Frequency']),
+                 exp(coef(glm1)['P_Child']),
+                 exp(coef(glm1)['P_Cook']),
+                 exp(coef(glm1)['P_DIY']),
+                 exp(coef(glm1)['P_Art']))
+)
+
+# Print the table using knitr::kable
+kable(odds_ratios, col.names = c("Variable", "Odds Ratio"), caption = "Odds Ratios from the Logistic Model")
+```
+
+
+We observe the following key findings from the model:
+
+-   Gender (Male): Males decrease the odds of a client buying a book by a factor of 0.88.
+
+-   Amount of Books Purchased: A larger amount of books purchased increases the odds of a client buying a book by a factor of 1.
+
+-   Purchase Frequency: A higher frequency of books purchased decreases the odds of a client buying a book by a factor of 0.99.
+
+-   Child Books Purchased: A higher purchase of child books increases the odds of a client buying a book by a factor of 0.97.
+
+-   DIY Books Purchased: A higher purchase of DIY books increases the odds of a client buying a book by a factor of 0.96.
+
+-   Art Books Purchased: A higher purchase of art books increases the odds of a client buying a book by a factor of 1.24.
+
+With this model, we then use it on our bbc_test sample to see how well it predicts and determine the most optimal cutoff to have the highest Sensitivity. Here are the following results:
+
+```{r, warning=FALSE}
+#| echo: false
+# Predict the probability on bbc_train - cutoff 0.5
+bbc_test$PredProb <- predict.glm(glm1, newdata = bbc_test, type = 'response')
+
+#create Prediction Indicators for y
+bbc_test$Pred_Y <- ifelse(bbc_test$PredProb >= 0.5, 1, 0)
+
+caret::confusionMatrix(as.factor(bbc_test$Choice),as.factor(bbc_test$Pred_Y), positive = '1') #this function and , positive = '1'
+
+## 89.96 Accuracy
+## 41.29 Sensitivity
+## 93.47 Specificity
+
+#create Prediction Indicators for y
+bbc_test$Pred_Y <- ifelse(bbc_test$PredProb >= 0.8, 1, 0)
+
+caret::confusionMatrix(as.factor(bbc_test$Choice),as.factor(bbc_test$Pred_Y), positive = '1') #this function and , positive = '1'
+
+## 91.3 Accuracy
+## 83 Sensitivity
+## 91.3 Specificity
+
+```
+
+We see the best cutoff for the highest sensitivity is at 0.8. With this, the performance of our model on the bbc_test data set is 91% accurate overall, and our sensitivity is 83% with a specificity of 91%
+
 # Conclusion
 
 *Concludes with a summary of the aim and results. Discusses alternative methods that can be used.*
+
+Based on our analysis, the **ADD MODEL**
+
+**Add details on if it is better to use model or just send campaign to everyone in the list.**
+
+# STUFF FROM THE PDF
+
+Summarize the results of your analysis for the three models. The training, testing, and prediction data can be found on Blackboard.
+
+Interpret the results of the models. In particular, for models the influential covariates and their coefficients, provide insights.
+
+BBBC is considering a similar mail campaign in the Midwest where it has data for 50,000 customers. Such mailings typically promote several books. The allocated cost of the mailing is \$0.65/addressee (including postage) for the art book, and the book costs \$15 to purchase and mail. The company allocates overhead to each book at 45% of cost. The selling price of the book is \$31.95. Based on the model, which customers should Bookbinders target? How much more profit would you expect the company to generate using these models as compare to sending the mail offer to the entire list.
+
+Please also summarize the advantages and disadvantages of the three models, as you experienced in the modeling exercise. Should the company develop expertise in either (or all) of these methods to develop in-house capability to evaluate its direct mail campaigns.
+
+How would you simplify and automate your recommended method(s) for future modeling efforts at the company?
