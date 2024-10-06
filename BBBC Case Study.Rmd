@@ -13,6 +13,9 @@ library(readxl)
 library(tidyverse)
 library(car)
 library(knitr)
+library(gt)
+library(broom)
+library(caret)
 ```
 
 ```{r Loading Data, echo=FALSE, warning=FALSE, results='hide'}
@@ -24,6 +27,45 @@ bbc_train = read_xlsx('Data/BBBC-Train.xlsx')  # change variable name to match c
 ```{r, Data Structure, echo=FALSE, warning=FALSE, results='hide'}
 str(bbc_test)
 ```
+
+
+```{r, results='hide'}
+#| echo: false
+glm1 <- glm(Choice ~ . - Observation, data = bbc_train)
+summary(glm1)
+#vif(glm1)
+```
+
+
+```{r, GLM -1, results='hide'}
+#| echo: false
+glm1 <- glm(Choice ~ .-Observation-Last_purchase, data = bbc_train)
+summary(glm1)
+vif(glm1)
+```
+
+
+```{r, GLM -2, results='hide'}
+#| echo: false
+glm1 <- glm(Choice ~ .-Observation-Last_purchase-First_purchase, data = bbc_train)
+summary(glm1)
+vif(glm1)
+```
+
+
+```{r, GLM -3, results='hide'}
+#| echo: false
+glm1 = glm(Choice ~ .-Observation-Last_purchase-First_purchase-P_Youth, data = bbc_train)
+summary(glm1)
+```
+
+```{r VIF Final GLM Model, results='hide'}
+#| echo: false
+vif(glm1)
+```
+
+
+
 
 ##### **Paper Starts Here**
 
@@ -63,13 +105,15 @@ This approach is reinforced by the work of Levin and Zahavi (1994), who explored
 
 *Discusses types of variables, sample size, and sampling techniques (if any). Discusses the model(s) and its assumptions and limitations.*
 
-Our dataset was given to us divided into training and test sets. The training set includes 1,600 observations, while the test set contains 2,300 observations. The dataset consists of 12 variables, with one variable (observation) being removed. Two variables were converted into factors: gender and choice, with choice serving as our response variable. The remaining variables are numerical. For some of these numerical variables, including Last_purchased, we will transform them into categorical variables to see how it would impact our modeling process.
+We began our analysis by converting two variables, choice and gender, into factors. Additionally, we transformed *First_purchase* and *Last_purchase* into factor variables with four discrete buckets. However, we later chose not to include these variables in the final GLM model due to concerns about multicollinearity between them. The training dataset contained 1,600 observations, while the testing dataset had 2,300 observations.
 
-## GLM
+Throughout the analysis, we utilized several models: logistic regression, Support Vector Machine (SVM), and Linear Discriminant Analysis (LDA). Although we initially considered using a linear regression model, it was not suitable for our problem because the response variable was binary.
 
-## SVM
+For the logistic regression model, we made several assumptions, including that the dependent variable was binary, the observations were independent, and there was a linear relationship between the predictors and the log-odds of the outcome. We also assumed that there was no multicollinearity among the predictors and that there was no perfect separation in the data.
 
-## LDA
+In the case of the SVM model, we assumed that the data was linearly separable and that the outcome was not imbalanced. To address any potential imbalance, we balanced the test data before building the SVM model.
+
+Finally, for the LDA model, we assumed that the data was normally distributed within each class, that there was homoscedasticity (i.e., equal variance-covariance structure across classes), that the classes were linearly separable, and that the observations were independent.
 
 # Data
 
@@ -136,39 +180,44 @@ corrplot(M, method = c("color"))
 
 Here we will be discussing the outputs from our logistic model we applied to the data set to best predict if someone will purchase a book - Choice (1/0). We first begin with all the variables in the data set to see which independent variables are significant.
 
-```{r}
+For our model, we first ran the GLM removing the observations variable and from our results ew noticed that the variable *Last_Purchase* had the largest VIF so we decided to remove that from the model. On our second run of the GLM, we found that *First_purchase* now had the largest VIF so we decided to remove from our second iteration of the model. On our third iteration, we found that P_Youth had a p-value greater than 0.05 so we removed it from our final model. Our final model (below), includes all the significant variables
+
+### GLM Final Model
+
+```{r, warning=FALSE}
 #| echo: false
-glm1 <- glm(Choice ~ . - Observation, data = bbc_train)
-summary(glm1)
-#vif(glm1)
+
+glm1_summary <- tidy(glm1)
+
+gt(glm1_summary) %>%
+  tab_header(title = "Logistic Regression Results",
+             subtitle = "Summary of Model Coefficients") %>%
+  cols_label(
+    term = "Variable",
+    estimate = "Estimate",
+    std.error = "Standard Error",
+    statistic = "t-value",
+    p.value = "p-value") %>%
+  fmt_number(columns = vars(estimate, std.error, statistic, p.value),
+    decimals = 4)
 ```
 
-With all the dependent variables, last_Purchase has the largest VIF so we decide to remove that from our model.
 
-```{r, GLM -1 }
+```{r, warning=FALSE}
 #| echo: false
-glm1 <- glm(Choice ~ .-Observation-Last_purchase, data = bbc_train)
-summary(glm1)
-vif(glm1)
+
+vif_values = vif(glm1)
+
+vif_table = data.frame(
+  Variable = names(vif_values),
+  VIF = round(vif_values, 2))
+
+kable(vif_table, col.names = c("Variable", "VIF"), caption = "Variance Inflation Factors")
+
 ```
 
-First_purchase also has a large VIF so we will remove that from our model.
 
-```{r, GLM -2}
-#| echo: false
-glm1 <- glm(Choice ~ .-Observation-Last_purchase-First_purchase, data = bbc_train)
-summary(glm1)
-vif(glm1)
-```
-
-Finally, P_Youth has a p-value \> 0.05 so we will remove that to have our final model
-
-```{r, GLM -3}
-#| echo: false
-glm1 <- glm(Choice ~ .-Observation-Last_purchase-First_purchase-P_Youth, data = bbc_train)
-summary(glm1)
-vif(glm1)
-```
+### GLM Odds Ratio
 
 Before we get into the confusion matrix. Lets explain the relationship of each independent variable to the dependent variable. We first compute the exponential of our coefficient ratio to get the odds ratio.
 
@@ -207,6 +256,8 @@ We observe the following key findings from the model:
 
 With this model, we then use it on our bbc_test sample to see how well it predicts and determine the most optimal cutoff to have the highest Sensitivity. Here are the following results:
 
+### GLM Confusion Matrix
+
 ```{r, warning=FALSE}
 #| echo: false
 # Predict the probability on bbc_train - cutoff 0.5
@@ -232,11 +283,67 @@ caret::confusionMatrix(as.factor(bbc_test$Choice),as.factor(bbc_test$Pred_Y), po
 
 ```
 
+
+```{r}
+#| echo: false
+
+# Predict the probability on bbc_test dataset
+bbc_test$PredProb <- predict.glm(glm1, newdata = bbc_test, type = 'response')
+
+# Define a function to extract metrics from the confusion matrix
+get_metrics <- function(cutoff) {
+  # Create prediction indicators based on cutoff
+  bbc_test$Pred_Y <- ifelse(bbc_test$PredProb >= cutoff, 1, 0)
+  
+  # Calculate confusion matrix
+  cm <- confusionMatrix(as.factor(bbc_test$Choice), as.factor(bbc_test$Pred_Y), positive = '1')
+  
+  # Extract the relevant metrics
+  data.frame(
+    Cutoff = cutoff,
+    Accuracy = cm$overall['Accuracy'],
+    Sensitivity = cm$byClass['Sensitivity'],
+    Specificity = cm$byClass['Specificity']
+  )
+}
+
+# Get metrics for cutoff values 0.5 and 0.8
+metrics_0.5 <- get_metrics(0.5)
+metrics_0.8 <- get_metrics(0.8)
+
+# Combine the results into a single data frame
+metrics_table <- rbind(metrics_0.5, metrics_0.8)
+
+```
+
+```{r}
+#| echo: false
+
+# Display the metrics using knitr::kable
+kable(metrics_table, col.names = c("Cutoff", "Accuracy", "Sensitivity", "Specificity"),
+      caption = "Model Performance Metrics at Different Cutoffs")
+
+```
+
 We see the best cutoff for the highest sensitivity is at 0.8. With this, the performance of our model on the bbc_test data set is 91% accurate overall, and our sensitivity is 83% with a specificity of 91%
+
+## LDA
+
+```{r}
+lda_final <- lda(Choice~. - First_purchase - Last_purchase - Observation - First_purchase_quartile - Last_purchase_quartile, bc_train_bal)
+lda_final
+
+predictions.lda_final <- predict(lda_final, bbc_test)
+```
+
 
 ## SVM
 
-## LDA
+
+
+
+
+
 
 # Conclusion
 
