@@ -94,6 +94,14 @@ Here}}{Paper Starts Here}}\label{paper-starts-here}}
 \emph{Brief introduction of problem. Summarizes key findings. Summarizes
 insights behind key findings.}
 
+Our goal is to make a cost-effective decision for the book marketing
+campaign by either using a statistical model to target likely buyers or,
+if not worthwhile, sending the offer to everyone on our list to maximize
+profitability.
+
+We used three models---GLM, SVM, and LDA. The model that outperformed
+the others is: ADD MODEL. What we found is ADD KEY FINDINGS
+
 \hypertarget{our-problem}{%
 \section{Our Problem}\label{our-problem}}
 
@@ -104,7 +112,7 @@ For this study case our goal is to evaluate how effective three
 different models are and compare them with the option of creating this
 campaign without a model. We are trying to determine which model will
 provide the best balance between cost savings and profit. By analyzing
-the performance of each model and comparing ti against the campaign, we
+the performance of each model and comparing it against the campaign, we
 will identify the most cost-effective approach that maximizes profit.
 
 The three models we are comparing are the Linear Model (LM), Generalized
@@ -125,6 +133,49 @@ everyone in the 2300 or just a group of people based on our model.}
 \emph{Discusses and cites existing works in the theoretical and
 application realm.}
 
+The use of predictive modeling in marketing has been widely documented
+in both theoretical and applied settings. Predictive models, including
+linear regression, logistic regression, and support vector machines
+(SVM), have long been used to anticipate customer behavior based on
+historical data. In particular, database marketing, which focuses on
+analyzing customer data to personalize marketing efforts, has been a
+critical development in direct mail campaigns since the 1990s. According
+to Wilhelm (1994), database-driven approaches allow for the creation of
+tailored marketing strategies, improving response rates and customer
+engagement.
+
+In the context of book clubs, predictive modeling can significantly
+enhance the efficiency of marketing campaigns. Doubleday's use of
+modeling techniques to analyze over 80 variables exemplifies how
+predictive analytics can identify the most influential factors in
+customer purchasing decisions. This approach aligns with the theoretical
+underpinnings of direct marketing and the application of consumer
+behavior models, which aim to increase the precision of marketing
+efforts (DM News, 1994).
+
+Several studies have shown that logistic regression and SVM, in
+particular, offer high accuracy in binary classification problems such
+as purchase decisions, where the dependent variable is a choice between
+two outcomes. These methods, when combined with cost-benefit analyses,
+enable companies to target only those customers most likely to respond
+positively, thus maximizing profitability while minimizing wasted
+marketing spend. BBBC's interest in these models follows this
+established theoretical framework, as they seek to improve the efficacy
+of their direct mail program.
+
+By utilizing predictive models, BBBC can determine which customers to
+target in their next campaign, reducing costs and increasing the
+likelihood of positive responses. Previous work in database marketing
+suggests that such targeted approaches can yield significantly better
+results than untargeted mailings, with predictive modeling emerging as a
+key tool for modern marketing efforts.
+
+This approach is reinforced by the work of Levin and Zahavi (1994), who
+explored the application of machine learning techniques to marketing
+databases, confirming that models like SVM and logistic regression can
+offer actionable insights in direct mail marketing campaigns, improving
+response rates and customer satisfaction.
+
 \hypertarget{methods}{%
 \section{Methods}\label{methods}}
 
@@ -141,19 +192,43 @@ numerical variables, including Last\_purchased, we will transform them
 into categorical variables to see how it would impact our modeling
 process.
 
-Add stuff about unabalanced dataset?
+\hypertarget{glm}{%
+\subsection{GLM}\label{glm}}
 
-GLM:
+\hypertarget{svm}{%
+\subsection{SVM}\label{svm}}
 
-SVM: balance vs unbalanced comparison?
-
-LDA maybe?
+\hypertarget{lda}{%
+\subsection{LDA}\label{lda}}
 
 \hypertarget{data}{%
 \section{Data}\label{data}}
 
 \emph{Discusses how data was handled, i.e.~cleaned and preprocessed.
 Discusses distributions, correlations, etc.}
+
+\hypertarget{distribution-plots}{%
+\subsection{Distribution Plots}\label{distribution-plots}}
+
+Below we can see the distribution of our variables. While many variables
+do not exhibit particularly informative distributions, two stand out for
+further analysis. Amount\_purchased and First\_purchase both show
+right-skewed distributions, indicating that most customers tend to make
+moderate purchases early on, with fewer customers making larger or later
+purchases.
+
+\includegraphics{BBBC-Case-Study_files/figure-latex/Distribution Plots-1.pdf}
+
+\hypertarget{box-plots}{%
+\subsection{Box Plots}\label{box-plots}}
+
+The box plots reveal key patterns in the dataset. Amount\_purchased
+shows a central range between 100 and 300 units, with a few high
+outliers, while First\_purchase has most values below 50 but several
+outliers extending beyond that. Frequency is concentrated between 5 and
+20 purchases, with a few customers making more frequent purchases.
+
+\includegraphics{BBBC-Case-Study_files/figure-latex/boxplots-1.pdf}
 
 \hypertarget{clean-up}{%
 \subsection{Clean up}\label{clean-up}}
@@ -451,6 +526,12 @@ Sensitivity. Here are the following results:
 We see the best cutoff for the highest sensitivity is at 0.8. With this,
 the performance of our model on the bbc\_test data set is 91\% accurate
 overall, and our sensitivity is 83\% with a specificity of 91\%
+
+\hypertarget{svm-1}{%
+\subsection{SVM}\label{svm-1}}
+
+\hypertarget{lda-1}{%
+\subsection{LDA}\label{lda-1}}
 
 \hypertarget{conclusion}{%
 \section{Conclusion}\label{conclusion}}
