@@ -38,128 +38,61 @@ hist(train$P_DIY)
 ### logistic model
 ```{r}
 ### LETS TRY SAME TECHNIQUE BUT WITH LOGISTIC MODEL
-#glm model
-glm1 <- glm(Choice ~  Gender + Amount_purchased + 
-    Frequency +  + P_Child + P_Youth + 
-    P_Cook + P_DIY + P_Art
-            , data = train, family = binomial) #Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+glm1 <- glm(Choice ~ .-Observation, data = train)
 summary(glm1)
 vif(glm1)
 
-#CREATING MODEL ON TEST TO USE AND GET PREDICTIONS
-glmT <- glm(Choice ~  Gender + Amount_purchased + 
-    Frequency +  + P_Child + P_Youth + 
-    P_Cook + P_DIY + P_Art
-            , data = test, family = binomial) #Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-summary(glmT)
-vif(glmT)
+glm1 <- glm(Choice ~ .-Observation-Last_purchase, data = train)
+summary(glm1)
+vif(glm1)
 
-# Predict the probability on train - cutoff 0.5
-test$PredProb <- predict.glm(glmT, newdata = test, type = 'response')
+glm1 <- glm(Choice ~ .-Observation-Last_purchase-First_purchase, data = train)
+summary(glm1)
+vif(glm1)
 
-#create Prediction Indicators for y
-test$Pred_Y <- ifelse(test$PredProb >= 0.5, 1, 0)
-
-caret::confusionMatrix(as.factor(test$Choice),as.factor(test$Pred_Y), positive = '1') #this function and 
-
-
-## 91.48 Accuracy
-## 61.11 Sensitivity
-## 91.96 Specificity
 
 #REMOVING Y_YOUTH AS ITS P-VALUE IS > 0.05
-glmTest_FINAL<- glm(Choice ~  Gender + Amount_purchased + 
+glm1<- glm(Choice ~  Gender + Amount_purchased + 
     Frequency +  + P_Child  + 
     P_Cook + P_DIY + P_Art
-            , data = test, family = binomial) #Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+            , data = train, family = binomial) #Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 summary(glmTest_FINAL)
 vif(glmTest_FINAL)
 
+
+
+#REMOVING Y_YOUTH AS ITS P-VALUE IS > 0.05
+#glmTest_FINAL<- glm(Choice ~  Gender + Amount_purchased + 
+ #   Frequency +  + P_Child  + 
+ #   P_Cook + P_DIY + P_Art
+ #           , data = test, family = binomial) #Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+#s#ummary(glmTest_FINAL)
+#vif(glmTest_FINAL)
+
 # Predict the probability on train - cutoff 0.5
-test$PredProb <- predict.glm(glmTest_FINAL, newdata = test, type = 'response')
+test$PredProb <- predict.glm(glm1, newdata = test, type = 'response')
 
 #create Prediction Indicators for y
 test$Pred_Y <- ifelse(test$PredProb >= 0.5, 1, 0)
 
 caret::confusionMatrix(as.factor(test$Choice),as.factor(test$Pred_Y), positive = '1') #this function and , positive = '1'
 
-## 91.52 Accuracy
-## 62.16 Sensitivity
-## 92.00 Specificity
+## 89.52 Accuracy
+## 39.89 Sensitivity
+## 93.81 Specificity
 
 ```
 
 ## Finding most optimal cutoff for highest sensitiviy & Specificity
 ```{r}
-library(prediction)
-##DETER4MINING BEST THRESHOLD FOR BEST SENSITIVITY
+test$Pred_Y <- ifelse(test$PredProb >= 0.8, 1, 0)
 
-summary(glmTest_FINAL)
-probabilities <- predict(glmTest_FINAL, type = "response")
-predicted.classes <- ifelse(probabilities > 0.5, 1, 0)
+caret::confusionMatrix(as.factor(test$Choice),as.factor(test$Pred_Y), positive = '1') #this function and , positive = '1'
 
-#### end of default cutoff of 0.5
-#### optimal cutoff
-test
-#ROC Curve and AUC
-pred <- prediction(probabilities, test$Choice) 
-pred
-#Predicted Probability and True Classification
+## 91.35 Accuracy
+## 64.71 Sensitivity
+## 91.55 Specificity
 
-# area under curve
-auc <- round(as.numeric(performance(pred, measure = "auc")@y.values),3)
-auc
-
-#plotting the ROC curve and computing AUC
-perf <- performance(pred, "tpr","fpr")
-plot(perf,colorize = T, main = "ROC Curve")
-text(0.5,0.5, paste("AUC:", auc))
-
-# computing threshold for cutoff to best trade off sensitivity and specificity
-#first sensitivity
-plot(unlist(performance(pred, "sens")@x.values), unlist(performance(pred, "sens")@y.values), 
-     type="l", lwd=2, 
-     ylab="Sensitivity", xlab="Cutoff", main = paste("Maximized Cutoff\n","AUC: ",auc))
-
-par(new=TRUE) # plot another line in same plot
-
-#second specificity
-plot(unlist(performance(pred, "spec")@x.values), unlist(performance(pred, "spec")@y.values), 
-     type="l", lwd=2, col='red', ylab="", xlab="")
-axis(4, at=seq(0,1,0.2)) #specificity axis labels
-mtext("Specificity",side=4, col='red')
-
-#find where the lines intersect
-min.diff <-which.min(abs(unlist(performance(pred, "sens")@y.values) - unlist(performance(pred, "spec")@y.values)))
-min.x<-unlist(performance(pred, "sens")@x.values)[min.diff]
-min.y<-unlist(performance(pred, "spec")@y.values)[min.diff]
-optimal <-min.x #this is the optimal points to best trade off sensitivity and specificity
-
-abline(h = min.y, lty = 3)
-abline(v = min.x, lty = 3)
-text(min.x,0,paste("optimal threshold=",round(optimal,2)), pos = 3)
-
-
-```
-### NEW MODEL WITH MOST OPTIMAL CUTOFF
-```{r}
-# Predict the probability on train - cutoff 0.5
-test$PredProb <- predict.glm(glmTest_FINAL, newdata = test, type = 'response')
-
-#create Prediction Indicators for y
-test$Pred_Y <- ifelse(test$PredProb >= 0.5, 1, 0)
-caret::confusionMatrix(as.factor(test$Choice),as.factor(test$Pred_Y), positive = '1') #this function and 
-
-#BEST SENSITIVITY
-## X Accuracy
-## X Sensitivity
-## X Specificity
-
-
-#original
-## 91.52 Accuracy
-## 62.16 Sensitivity
-## 92.00 Specificity
 
 ```
 
@@ -344,4 +277,97 @@ caret::confusionMatrix(as.factor(test$Choice),as.factor(test$Pred_Y), positive =
 
 ```
 
+
+
+
+### EVERYTHING BELOW THIS IS FOR THE FINAL REPORT
+
+
+# Results:
+
+Here we will be discussing the outputs from our logistic model we applied to the data set to best predict if someone will purchase a book - Choice (1/0). We first begin with all the variables in the data set to see which independent variables are significant.
+
+```{r}
+train <- read_xlsx("C:/Users/alexm/Downloads/Pract 2/DA6813/Data/BBBC-train.xlsx")
+test <- read_xlsx("C:/Users/alexm/Downloads/Pract 2/DA6813/Data/BBBC-test.xlsx")
+glm1 <- glm(Choice ~ . - Observation, data = train)
+summary(glm1)
+vif(glm1)
+```
+
+With all the dependent variables, last_Purchase has the largest VIF so we decide to remove that from our model.
+```{r}
+glm1 <- glm(Choice ~ .-Observation-Last_purchase, data = train)
+summary(glm1)
+vif(glm1)
+```
+First_purchase alos has a large VIF so we will remove that from our model.
+```{r}
+glm1 <- glm(Choice ~ .-Observation-Last_purchase-First_purchase, data = train)
+summary(glm1)
+vif(glm1)
+```
+Finally, P_Youth has a p-value > 0.05 so we will remove that to have our final model
+
+```{r}
+glm1 <- glm(Choice ~ .-Observation-Last_purchase-First_purchase-P_Youth, data = train)
+summary(glm1)
+vif(glm1)
+```
+
+Before we get into the confusion matrix. Lets explain the relationship of each independent variable to the dependent variable. We first compute the exponential of our coefficient ratio to get the odds ratio.
+
+```{r}
+exp(coef(glm1)['Gender'])
+exp(coef(glm1)['Amount_purchased'])
+exp(coef(glm1)['Frequency'])
+exp(coef(glm1)['P_Child'])
+exp(coef(glm1)['P_Cook'])
+exp(coef(glm1)['P_DIY'])
+exp(coef(glm1)['P_Art'])
+
+```
+
+we see Males decrease the odds of a client buying a book by a factor of 0.88
+
+we see for those with a larger amount of books purchased increases the odds of a client buying a book by a factor of 1.
+
+we see for those with a higher frequency of books purchased decreases the odds of a client buying a book by a factor of 0.99
+
+we see for those with a higher purchase of child books increases the odds of a client buying a book by a factor of 0.97
+
+we see for those with a higher purchase of DIY books increases the odds of a client buying a book by a factor of 0.96
+
+we see for those with a higher purchase of Art books increases the odds of a client buying a book by a factor of 1.24
+
+
+
+With this model, we then use it on our test sample to see how well it predicts and determine the most optimal cutoff to have the highest Sensitivity. Here are the following results:
+```{r, warning=FALSE}
+
+# Predict the probability on train - cutoff 0.5
+test$PredProb <- predict.glm(glm1, newdata = test, type = 'response')
+
+#create Prediction Indicators for y
+test$Pred_Y <- ifelse(test$PredProb >= 0.5, 1, 0)
+
+caret::confusionMatrix(as.factor(test$Choice),as.factor(test$Pred_Y), positive = '1') #this function and , positive = '1'
+
+## 89.96 Accuracy
+## 41.29 Sensitivity
+## 93.47 Specificity
+
+#create Prediction Indicators for y
+test$Pred_Y <- ifelse(test$PredProb >= 0.8, 1, 0)
+
+caret::confusionMatrix(as.factor(test$Choice),as.factor(test$Pred_Y), positive = '1') #this function and , positive = '1'
+
+## 91.3 Accuracy
+## 83 Sensitivity
+## 91.3 Specificity
+
+```
+
+
+We see the best cutoff for the highest sensitivity  is at 0.8. With this, the performance of our model on the test data set is 91% accurate overall, and our sensitivity is 83% with a specificity of 91%
 

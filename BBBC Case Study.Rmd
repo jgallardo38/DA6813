@@ -5,22 +5,23 @@ date: "2024-09-25"
 output: pdf_document
 ---
 
-```{r, Libraries, echo=FALSE, warning=FALSE, }
+```{r, Libraries, echo=FALSE, warning=FALSE, results='hide', message=FALSE}
 library(ggplot2)
 library(dplyr)
 library(corrplot)
 library(readxl)
 library(tidyverse)
+library(car)
+library(knitr)
 ```
 
-```{r Loading Data, echo=FALSE, warning=FALSE}
+```{r Loading Data, echo=FALSE, warning=FALSE, results='hide'}
 getwd() #open R project file to have the same file path
 bbc_test = read_xlsx('Data/BBBC-Test.xlsx') # change variable name to match code
 bbc_train = read_xlsx('Data/BBBC-Train.xlsx')  # change variable name to match code
 ```
 
-
-```{r, Data Structure, echo=FALSE}
+```{r, Data Structure, echo=FALSE, warning=FALSE, results='hide'}
 str(bbc_test)
 ```
 
@@ -34,6 +35,12 @@ str(bbc_test)
 
 *Clear description of the problem, from an application and theoretical point of view. Outlines the report.*
 
+For this study case our goal is to evaluate how effective three different models are and compare them with the option of creating this campaign without a model. We are trying to determine which model will provide the best balance between cost savings and profit. By analyzing the performance of each model and comparing ti against the campaign, we will identify the most cost-effective approach that maximizes profit.
+
+The three models we are comparing are the Linear Model (LM), Generalized Linear Model (GLM), and Support Vector Machine (SVM). Although we anticipate that the linear model may not perform well, we are still interested in understanding why it may not be the best fit for this case study. This exploration will help us gain valuable insights into the limitations of the linear model in this context and guide our decision-making process.
+
+**He said that we don't have to use the 50k population for our calculation to find which way would be best for the campaign. Email everyone in the 2300 or just a group of people based on our model.**
+
 # Literature Review
 
 *Discusses and cites existing works in the theoretical and application realm.*
@@ -42,34 +49,161 @@ str(bbc_test)
 
 *Discusses types of variables, sample size, and sampling techniques (if any). Discusses the model(s) and its assumptions and limitations.*
 
-Our dataset was gives to us divided into training and test sets. The training set includes 1,600 observations, while the test set contains 2,300 observations. The dataset consists of 12 variables, with one variable (observation) being removed. Two variables were converted into factors: gender and choice, with choice serving as our response variable. The remaining variables are numerical. For some of these numerical variables, including Last_purchased, we will transform them into categorical variables to enhance our modeling process.
+Our dataset was given to us divided into training and test sets. The training set includes 1,600 observations, while the test set contains 2,300 observations. The dataset consists of 12 variables, with one variable (observation) being removed. Two variables were converted into factors: gender and choice, with choice serving as our response variable. The remaining variables are numerical. For some of these numerical variables, including Last_purchased, we will transform them into categorical variables to see how it would impact our modeling process.
 
-Add stuff about unabalanced dataset
+Add stuff about unabalanced dataset?
 
-Add stuff about the models we will use: GLM, SVM, segmentation, etc
+GLM:
 
+SVM: balance vs unbalanced comparison?
 
+LDA maybe?
 
 # Data
 
 *Discusses how data was handled, i.e. cleaned and preprocessed. Discusses distributions, correlations, etc.*
 
+## Clean up
+
+We modified two variables into factors, and we created categories for ADD STUFF HERE?
+
 ## Correlation
 
-```{r, Correlation Plot echo=FALSE}
+The graph below highlights the variables with the highest correlations. We observed that *first_purchased* and *last_purchased* exhibit the strongest correlation. Based on this, we decided to create labels for these two variables to test their potential impact on our model's performance.. **ADD STUFF ABOUT RESULTS. DID IT WORK OR DID IT MAKE IT WORST?**
+
+```{r, Correlation Plot, echo=FALSE}
 #Added this correlation plot in case we need it
 
 cor_train = bbc_train %>% 
   select(-Observation, -Gender, - Choice)
 #dplyr::select_if(train, is.numeric)
 M = cor(cor_train)
-corrplot(M, method = c("number"))
+corrplot(M, method = c("color"))
 ```
 
 # Results
 
 *Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.*
 
+## GLM Results
+
+Here we will be discussing the outputs from our logistic model we applied to the data set to best predict if someone will purchase a book - Choice (1/0). We first begin with all the variables in the data set to see which independent variables are significant.
+
+```{r}
+#| echo: false
+glm1 <- glm(Choice ~ . - Observation, data = bbc_train)
+summary(glm1)
+#vif(glm1)
+```
+
+With all the dependent variables, last_Purchase has the largest VIF so we decide to remove that from our model.
+
+```{r, GLM -1 }
+#| echo: false
+glm1 <- glm(Choice ~ .-Observation-Last_purchase, data = bbc_train)
+summary(glm1)
+vif(glm1)
+```
+
+First_purchase also has a large VIF so we will remove that from our model.
+
+```{r, GLM -2}
+#| echo: false
+glm1 <- glm(Choice ~ .-Observation-Last_purchase-First_purchase, data = bbc_train)
+summary(glm1)
+vif(glm1)
+```
+
+Finally, P_Youth has a p-value \> 0.05 so we will remove that to have our final model
+
+```{r, GLM -3}
+#| echo: false
+glm1 <- glm(Choice ~ .-Observation-Last_purchase-First_purchase-P_Youth, data = bbc_train)
+summary(glm1)
+vif(glm1)
+```
+
+Before we get into the confusion matrix. Lets explain the relationship of each independent variable to the dependent variable. We first compute the exponential of our coefficient ratio to get the odds ratio.
+
+```{r}
+#| echo: false
+
+odds_ratios <- data.frame(
+  Variable = c("Gender (Male)", "Amount Purchased", "Purchase Frequency", 
+               "Child Books Purchased", "Cook Books Purchased", "DIY Books Purchased", "Art Books Purchased"),
+  Odds_Ratio = c(exp(coef(glm1)['Gender']), 
+                 exp(coef(glm1)['Amount_purchased']),
+                 exp(coef(glm1)['Frequency']),
+                 exp(coef(glm1)['P_Child']),
+                 exp(coef(glm1)['P_Cook']),
+                 exp(coef(glm1)['P_DIY']),
+                 exp(coef(glm1)['P_Art']))
+)
+
+# Print the table using knitr::kable
+kable(odds_ratios, col.names = c("Variable", "Odds Ratio"), caption = "Odds Ratios from the Logistic Model")
+```
+
+
+We observe the following key findings from the model:
+
+-   Gender (Male): Males decrease the odds of a client buying a book by a factor of 0.88.
+
+-   Amount of Books Purchased: A larger amount of books purchased increases the odds of a client buying a book by a factor of 1.
+
+-   Purchase Frequency: A higher frequency of books purchased decreases the odds of a client buying a book by a factor of 0.99.
+
+-   Child Books Purchased: A higher purchase of child books increases the odds of a client buying a book by a factor of 0.97.
+
+-   DIY Books Purchased: A higher purchase of DIY books increases the odds of a client buying a book by a factor of 0.96.
+
+-   Art Books Purchased: A higher purchase of art books increases the odds of a client buying a book by a factor of 1.24.
+
+With this model, we then use it on our bbc_test sample to see how well it predicts and determine the most optimal cutoff to have the highest Sensitivity. Here are the following results:
+
+```{r, warning=FALSE}
+#| echo: false
+# Predict the probability on bbc_train - cutoff 0.5
+bbc_test$PredProb <- predict.glm(glm1, newdata = bbc_test, type = 'response')
+
+#create Prediction Indicators for y
+bbc_test$Pred_Y <- ifelse(bbc_test$PredProb >= 0.5, 1, 0)
+
+caret::confusionMatrix(as.factor(bbc_test$Choice),as.factor(bbc_test$Pred_Y), positive = '1') #this function and , positive = '1'
+
+## 89.96 Accuracy
+## 41.29 Sensitivity
+## 93.47 Specificity
+
+#create Prediction Indicators for y
+bbc_test$Pred_Y <- ifelse(bbc_test$PredProb >= 0.8, 1, 0)
+
+caret::confusionMatrix(as.factor(bbc_test$Choice),as.factor(bbc_test$Pred_Y), positive = '1') #this function and , positive = '1'
+
+## 91.3 Accuracy
+## 83 Sensitivity
+## 91.3 Specificity
+
+```
+
+We see the best cutoff for the highest sensitivity is at 0.8. With this, the performance of our model on the bbc_test data set is 91% accurate overall, and our sensitivity is 83% with a specificity of 91%
+
 # Conclusion
 
 *Concludes with a summary of the aim and results. Discusses alternative methods that can be used.*
+
+Based on our analysis, the **ADD MODEL**
+
+**Add details on if it is better to use model or just send campaign to everyone in the list.**
+
+# STUFF FROM THE PDF
+
+Summarize the results of your analysis for the three models. The training, testing, and prediction data can be found on Blackboard.
+
+Interpret the results of the models. In particular, for models the influential covariates and their coefficients, provide insights.
+
+BBBC is considering a similar mail campaign in the Midwest where it has data for 50,000 customers. Such mailings typically promote several books. The allocated cost of the mailing is \$0.65/addressee (including postage) for the art book, and the book costs \$15 to purchase and mail. The company allocates overhead to each book at 45% of cost. The selling price of the book is \$31.95. Based on the model, which customers should Bookbinders target? How much more profit would you expect the company to generate using these models as compare to sending the mail offer to the entire list.
+
+Please also summarize the advantages and disadvantages of the three models, as you experienced in the modeling exercise. Should the company develop expertise in either (or all) of these methods to develop in-house capability to evaluate its direct mail campaigns.
+
+How would you simplify and automate your recommended method(s) for future modeling efforts at the company?
