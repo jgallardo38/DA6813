@@ -14,6 +14,7 @@ library(readxl)
 library(dplyr)
 library(car)
 library(ggplot2)
+library(MASS)
 ```
 
 ```{r}
@@ -25,10 +26,11 @@ bbc_test <- read_xlsx("C:/Users/Josh/Documents/Algor1/BBBC-Test.xlsx")
 str(bbc_train)
 bbc_train$Choice <- as.factor(bbc_train$Choice)
 bbc_train$Gender <- as.factor(bbc_train$Gender)
+
 summary(bbc_train$Choice)
 bbc_t_num <- dplyr::select_if(bbc_train, is.numeric)
-M = cor(bbc_t_num)
-corrplot(M, method = c("number"))
+#M = cor(bbc_t_num)
+#corrplot(M, method = c("number"))
 colSums(is.na(bbc_train))
 #checked quartile to determine where cutoff should be
 summary(bbc_train$First_purchase)
@@ -47,6 +49,9 @@ bbc_train <- bbc_train %>%  mutate(Last_purchase_quartile = case_when(
     Last_purchase >= 23 & Last_purchase < 30 ~ 3,
     Last_purchase >= 30 ~ 4
   ))
+
+bbc_train$First_purchase_quartile <- as.factor(bbc_train$First_purchase_quartile)
+bbc_train$Last_purchase_quartile <- as.factor(bbc_train$Last_purchase_quartile)
 ```
 ```{r}
 bbbc_long = bbc_t_num %>% 
@@ -71,10 +76,30 @@ ggplot(bbbc_long, aes(x = Value)) +
 ```{r}
 glm.bbbc <- glm(Choice ~ . -First_purchase - Observation, data = bbc_train, family = binomial)
 summary(glm.bbbc)
+
 glm.step.bbc = step(glm.bbbc, direction = "backward") # stepwise backward elim.
 summary(glm.step.bbc)
+
+##
+
+glm.bbbc2 <- glm(Choice~. - First_purchase - Last_purchase - Observation - First_purchase_quartile - Last_purchase_quartile, data = bbc_train, family = binomial)
+
+glm.step.bbc2 = step(glm.bbbc2, direction = "backward") # stepwise backward elim.
+summary(glm.step.bbc)
+
+predictions.log.bbbc2<- predict(glm.bbbc2, newdata = bbc_test, type = "response")
+
+predictions.log.bbbc2<- ifelse(predictions.log.bbbc2>= .5,1,0)
+
+
+# Make confusion matrix for Logit model to compare accuracy
+caret::confusionMatrix(factor(predictions.log.bbbc2), factor(bbc_test$Choice))
 ```
+
+
+
 ```{r SVM}
+library(e1071)
 summary(bbc_train)
 #balance training 
 set.seed(42)
@@ -84,29 +109,55 @@ sample_y = sample_n(bc_train_n, nrow(bc_train_y))
 bc_train_bal = rbind(bc_train_y,sample_y)
 
 #no need to split data because its already split (maybe i run a svm with and w/out balancing)
-formula <- Choice~.
-
+formula <- Choice~.- Observation
+formula2 <- Choice~. - First_purchase - Observation
+from3 <- Choice~. - First_purchase - Last_purchase - Observation
+form4 <- Choice~. - First_purchase - Last_purchase - Observation - First_purchase_quartile
+form5 <- Choice~. - First_purchase - Last_purchase - Observation - First_purchase_quartile - Last_purchase_quartile
+#can designate kernal after data (try them all)
 tuned_bal <- tune.svm(formula, data= bc_train_bal, gamma = seq(.01,.1, by = .01),
                   cost = seq(.1, 1, by = .1))
 tuned_unbal <- tune.svm(formula, data= bbc_train, gamma = seq(.01,.1, by = .01),
                   cost = seq(.1, 1, by = .1))
 
-
+tuned_bal_noco <- tune.svm(formula2, data= bc_train_bal, gamma = seq(.01,.1, by = .01),
+                  cost = seq(.1, 1, by = .1))
+tuned_bal_noco2 <- tune.svm(from3, data= bc_train_bal, gamma = seq(.01,.1, by = .01),
+                  cost = seq(.1, 1, by = .1))
+#tuned_bal5 <- tune.svm(form4, data= bc_train_bal, gamma = seq(.01,.1, by = .01),
+#                  cost = seq(.1, 1, by = .1))
+#tuned_bal6 <- tune.svm(form5, data= bc_train_bal, gamma = seq(.01,.1, by = .01),
+#                  cost = seq(.1, 1, by = .1))
 #find best params
 tuned_bal$best.parameters
 tuned_unbal$best.parameters
-
+tuned_bal_noco$best.parameters
+tuned_bal_noco2$best.parameters
+#tuned_bal5$best.parameters
+#tuned_bal6$best.parameters
 #
 bal_svm <- svm(formula = formula,data= bc_train_bal, gamma = tuned_bal$best.parameters$cost, cost = tuned_bal$best.parameters$cost)
 
 unbal_svm <- svm(formula = formula,data= bbc_train, gamma = tuned_unbal$best.parameters$cost, cost = tuned_unbal$best.parameters$cost)
 
+noco_svm <- svm(formula = formula2,data= bc_train_bal, gamma = tuned_bal$best.parameters$cost, cost = tuned_bal$best.parameters$cost)
+
+noco2_svm <- svm(formula = from3,data= bc_train_bal, gamma = tuned_bal$best.parameters$cost, cost = tuned_bal$best.parameters$cost)
+
+#svm5 <- svm(formula = form4 ,data= bc_train_bal, gamma = tuned_bal$best.parameters$cost, cost = tuned_bal$best.parameters$cost)
+
+#svm6 <- svm(formula = form5 ,data= bc_train_bal, gamma = tuned_bal$best.parameters$cost, cost = tuned_bal$best.parameters$cost)
+
 summary(bal_svm)
 summary(unbal_svm)
-
+summary(noco_svm)
+summary(noco2_svm)
+#summary(svm5)
+#summary(svm6)
 # need to convert variables like in training 
 bbc_test$Choice <- as.factor(bbc_test$Choice)
 bbc_test$Gender <- as.factor(bbc_test$Gender)
+
 
 bbc_test <- bbc_test %>%  mutate(First_purchase_quartile = case_when(
     First_purchase < 12 ~ 1,
@@ -121,6 +172,9 @@ bbc_test <- bbc_test %>%  mutate(Last_purchase_quartile = case_when(
     Last_purchase >= 23 & Last_purchase < 30 ~ 3,
     Last_purchase >= 30 ~ 4
   ))
+
+bbc_test$First_purchase_quartile <- as.factor(bbc_test$First_purchase_quartile)
+bbc_test$Last_purchase_quartile <- as.factor(bbc_test$Last_purchase_quartile)
 #predictions
 bal_svm_pred <- predict(bal_svm, bbc_test, type = "Response")
 table(pred=bal_svm_pred, true=bbc_test$Choice)
@@ -129,8 +183,48 @@ table(pred=bal_svm_pred, true=bbc_test$Choice)
 unbal_svm_pred <- predict(unbal_svm, bbc_test, type = "Response")
 table(pred=unbal_svm_pred, true=bbc_test$Choice)
 
+
+noco_svm_pred <- predict(noco_svm, bbc_test, type = "Response")
+table(pred=noco_svm_pred, true=bbc_test$Choice)
+
+noco2_svm_pred <- predict(noco2_svm, bbc_test, type = "Response")
+table(pred=noco_svm_pred, true=bbc_test$Choice)
+
+#fix this something is broken
+#svm_pred5 <- predict(svm5, bbc_test, type = "Response")
+#table(pred=svm_pred5, true=bbc_test$Choice)
 #confusion
 caret::confusionMatrix(factor(bal_svm_pred), bbc_test$Choice)
 caret::confusionMatrix(factor(unbal_svm_pred), bbc_test$Choice)
+caret::confusionMatrix(factor(noco_svm_pred), bbc_test$Choice)
+caret::confusionMatrix(factor(noco2_svm_pred), bbc_test$Choice)
+```
+
+```{r}
+summary(bbc_train$First_purchase_quartile)
+summary(bbc_train$Last_purchase_quartile)
+str(bbc_train)
+```
+```{r LDA}
+form_lda <- Choice~.- Observation
+
+lda_bbbc1 <- lda(form_lda, bc_train_bal)
+lda_bbbc1
+
+lda_bbbc2 <- lda(form5, bc_train_bal)
+lda_bbbc2
+
+lda_bbbc3 <- lda(Choice~. - First_purchase - Last_purchase - Observation - First_purchase_quartile - Last_purchase_quartile - Amount_purchased, bc_train_bal)
+lda_bbbc3
+
+
+predictions.lda1<- predict(lda_bbbc1, bbc_test)
+predictions.lda2<- predict(lda_bbbc2, bbc_test)
+predictions.lda3<- predict(lda_bbbc3, bbc_test)
+#so LDA has really even spes and sens around 
+caret::confusionMatrix(factor(predictions.lda1$class), bbc_test$Choice) #this one has too much co lin prob
+caret::confusionMatrix(factor(predictions.lda2$class), bbc_test$Choice)# this one 
+
+
 ```
 
