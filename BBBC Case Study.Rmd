@@ -26,6 +26,11 @@ bbc_train = read_xlsx('Data/BBBC-Train.xlsx')  # change variable name to match c
 
 ```{r, Data Structure, echo=FALSE, warning=FALSE, results='hide'}
 str(bbc_test)
+set.seed(42)
+bc_train_y = bbc_train %>% filter(Choice == 1)
+bc_train_n = bbc_train %>% filter(Choice == 0)
+sample_y = sample_n(bc_train_n, nrow(bc_train_y))
+bc_train_bal = rbind(bc_train_y,sample_y)
 ```
 
 
