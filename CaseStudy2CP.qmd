@@ -1,0 +1,314 @@
+---
+title: "Case Study 2"
+format: html
+editor: visual
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+library(readxl)
+
+read_excel("C:/Users/cplay/Downloads/BBBC-Test.xlsx")
+
+df <- read_excel("C:/Users/cplay/Downloads/BBBC-Test.xlsx")
+
+summary(df)
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
+
+```{r}
+### Install Libraries ###
+
+library(caret)
+library(lattice)
+library(ggplot2)
+install.packages("logistf")
+library(logistf)
+library(MASS)
+library(tidyverse)
+library(corrplot)
+library(car)
+library(caret)
+library(lattice)
+library(ggplot2)
+install.packages("logistf")
+library(logistf)
+library(MASS)
+library(tidyverse)
+library(corrplot)
+library(car)
+```
+
+```{r}
+
+str(df)
+```
+
+```{r}
+
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(skimr)
+install.packages("DataExplorer")
+library(DataExplorer)
+```
+
+"
+
+```{r}
+
+skim(df)
+```
+
+```{r}
+
+colSums(is.na(df))
+
+plot_missing(df)
+```
+
+```{r}
+
+plot_histogram(df)
+```
+
+```{r}
+
+plot_bar(df)
+```
+
+```{r}
+
+plot_boxplot(df, by = "Gender")
+```
+
+```{r}
+
+summary(df$Gender)
+```
+
+```{r}
+ glm1 <- glm(df)
+ print(glm1)
+
+```
+
+```{r}
+
+
+
+linear_model <- lm(Choice ~ .-Observation, data = df)
+summary(linear_model)
+```
+
+```{r}
+
+library(caret)
+library(e1071)
+library(glmnet)
+library(MASS)
+
+```
+
+```{r}
+ 
+read_excel("C:/Users/cplay/Downloads/BBBC-Test.xlsx")
+
+df <- read_excel("C:/Users/cplay/Downloads/BBBC-Test.xlsx")
+
+
+str(df)
+summary(df)
+```
+
+```{r}
+
+df$Choice <- as.factor(df$Choice)
+```
+
+```{r}
+
+# Split the data into training and testing sets (70% train, 30% test)
+set.seed(123)
+trainIndex <- createDataPartition(df$Choice, p = 0.7, list = FALSE)
+trainData <- df[trainIndex,]
+testData <- df[-trainIndex,]
+```
+
+```{r}
+# Fit a logistic regression model
+logit_model <- glm(Choice ~ ., data = trainData, family = binomial)
+
+# Summary of the model to identify important variables
+summary(logit_model)
+
+# Make predictions on the test set
+logit_predictions <- predict(logit_model, newdata = testData, type = "response")
+logit_class <- ifelse(logit_predictions > 0.5, 1, 0)
+
+# Evaluate model performance
+confusionMatrix(factor(logit_class), testData$Choice)
+```
+
+```{r}
+# Fit a SVM model
+svm_model <- svm(Choice ~ ., data = trainData, kernel = "linear")
+
+# Make predictions
+svm_predictions <- predict(svm_model, newdata = testData)
+
+# Evaluate model performance
+confusionMatrix(svm_predictions, testData$Choice)
+```
+
+```{r}
+
+# Fit a linear regression model
+linear_model <- lm(as.numeric(Choice) ~ ., data = trainData)
+
+# Summary of the model
+summary(linear_model)
+
+# Make predictions
+linear_predictions <- predict(linear_model, newdata = testData)
+
+# Convert predictions to binary
+linear_class <- ifelse(linear_predictions > 0.5, 1, 0)
+
+# Evaluate model performance
+confusionMatrix(factor(linear_class), testData$Choice)
+```
+
+```{r}
+
+# Calculate accuracy, precision, recall, and F1-score
+logit_perf <- confusionMatrix(factor(logit_class), testData$Choice)
+svm_perf <- confusionMatrix(svm_predictions, testData$Choice)
+linear_perf <- confusionMatrix(factor(linear_class), testData$Choice)
+
+# Print performance metrics
+print(logit_perf)
+print(svm_perf)
+print(linear_perf)
+```
+
+```{r}
+
+# Calculate expected profit for the targeted mailing campaign
+predicted_prob <- predict(logit_model, newdata = testData, type = "response")
+target_customers <- testData[predicted_prob > 0.5, ]
+
+# Calculate profit
+cost <- 0.65
+book_cost <- 15
+book_price <- 31.95
+overhead <- 0.45 * book_cost
+
+expected_profit <- nrow(target_customers) * (book_price - book_cost - overhead - cost)
+
+# Compare to mailing to all customers
+all_customers_profit <- nrow(testData) * (book_price - book_cost - overhead - cost)
+
+print(paste("Profit targeting likely buyers: ", expected_profit))
+print(paste("Profit sending to all customers: ", all_customers_profit))
+```
+
+```{r}
+
+
+table(df$Choice)
+```
+
+```{r}
+
+install.packages("ROSE")
+library(ROSE)
+```
+
+```{r}
+
+df_balanced <- ROSE(Choice ~ ., data = df, seed = 123)$data
+```
+
+```{r}
+
+df$Interaction_Term <- df$Amount_purchased * df$Frequency
+```
+
+```{r}
+
+# Create interaction terms
+df$Interaction_Term <- df$Amount_purchased * df$Frequency
+
+# Apply log transformation to skewed variables
+df$log_Last_purchase <- log(df$Last_purchase + 1) # Adding 1 to avoid log(0)
+```
+
+```{r}
+
+# Calculate VIF
+library(car)
+vif_model <- lm(Choice ~ ., data = df)
+vif(vif_model)
+```
+
+```{r}
+
+
+library(randomForest)
+
+# Fit a Random Forest model
+rf_model <- randomForest(Choice ~ ., data = trainData, importance = TRUE, ntree = 500)
+
+# Evaluate the model
+rf_predictions <- predict(rf_model, newdata = testData)
+ConfusionMatrix(rf_predictions, testData$Choice)
+```
+
+```{r}
+
+install.packages("xgboost")
+library(xgboost)
+
+# Convert data to matrix for XGBoost
+train_matrix <- model.matrix(Choice ~ ., data = trainData)
+test_matrix <- model.matrix(Choice ~ ., data = testData)
+
+# Train an XGBoost model
+xgb_model <- xgboost(data = train_matrix, label = as.numeric(trainData$Choice) - 1, nrounds = 100)
+
+# Make predictions
+xgb_predictions <- predict(xgb_model, test_matrix)
+xgb_class <- ifelse(xgb_predictions > 0.5, 1, 0)
+
+# Evaluate model performance
+confusionMatrix(factor(xgb_class), testData$Choice)
+```
+
+Lit Review
+
+The use of predictive modeling in marketing has been widely documented in both theoretical and applied settings. Predictive models, including linear regression, logistic regression, and support vector machines (SVM), have long been used to anticipate customer behavior based on historical data. In particular, database marketing, which focuses on analyzing customer data to personalize marketing efforts, has been a critical development in direct mail campaigns since the 1990s. According to Wilhelm (1994), database-driven approaches allow for the creation of tailored marketing strategies, improving response rates and customer engagement.
+
+In the context of book clubs, predictive modeling can significantly enhance the efficiency of marketing campaigns. Doubleday\'s use of modeling techniques to analyze over 80 variables exemplifies how predictive analytics can identify the most influential factors in customer purchasing decisions. This approach aligns with the theoretical underpinnings of direct marketing and the application of consumer behavior models, which aim to increase the precision of marketing efforts (DM News, 1994).
+
+Several studies have shown that logistic regression and SVM, in particular, offer high accuracy in binary classification problems such as purchase decisions, where the dependent variable is a choice between two outcomes. These methods, when combined with cost-benefit analyses, enable companies to target only those customers most likely to respond positively, thus maximizing profitability while minimizing wasted marketing spend. BBBC's interest in these models follows this established theoretical framework, as they seek to improve the efficacy of their direct mail program.
+
+By utilizing predictive models, BBBC can determine which customers to target in their next campaign, reducing costs and increasing the likelihood of positive responses. Previous work in database marketing suggests that such targeted approaches can yield significantly better results than untargeted mailings, with predictive modeling emerging as a key tool for modern marketing efforts.
+
+This approach is reinforced by the work of Levin and Zahavi (1994), who explored the application of machine learning techniques to marketing databases, confirming that models like SVM and logistic regression can offer actionable insights in direct mail marketing campaigns, improving response rates and customer satisfaction.
