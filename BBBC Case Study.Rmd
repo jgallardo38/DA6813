@@ -1,7 +1,7 @@
 ---
 title: "Bookbinder Study Case"
 author: "Alex Martinez, Josh Gardner, Cameron Playle, and Guillermo Gallardo"
-date: "2024-09-25"
+date: "2024-10-6"
 output: pdf_document
 ---
 
@@ -16,6 +16,8 @@ library(knitr)
 library(gt)
 library(broom)
 library(caret)
+library(MASS)
+library(e1071)
 ```
 
 ```{r Loading Data, echo=FALSE, warning=FALSE, results='hide'}
@@ -25,14 +27,12 @@ bbc_train = read_xlsx('Data/BBBC-Train.xlsx')  # change variable name to match c
 ```
 
 ```{r, Data Structure, echo=FALSE, warning=FALSE, results='hide'}
-str(bbc_test)
 set.seed(42)
 bc_train_y = bbc_train %>% filter(Choice == 1)
 bc_train_n = bbc_train %>% filter(Choice == 0)
 sample_y = sample_n(bc_train_n, nrow(bc_train_y))
 bc_train_bal = rbind(bc_train_y,sample_y)
 ```
-
 
 ```{r, results='hide'}
 #| echo: false
@@ -41,14 +41,12 @@ summary(glm1)
 #vif(glm1)
 ```
 
-
 ```{r, GLM -1, results='hide'}
 #| echo: false
 glm1 <- glm(Choice ~ .-Observation-Last_purchase, data = bbc_train)
 summary(glm1)
 vif(glm1)
 ```
-
 
 ```{r, GLM -2, results='hide'}
 #| echo: false
@@ -57,11 +55,43 @@ summary(glm1)
 vif(glm1)
 ```
 
-
 ```{r, GLM -3, results='hide'}
 #| echo: false
 glm1 = glm(Choice ~ .-Observation-Last_purchase-First_purchase-P_Youth, data = bbc_train)
 summary(glm1)
+```
+
+```{r, results='hide'}
+#| echo: false
+#with balanced train set
+glm2 = glm(Choice ~ .-Observation-Last_purchase-First_purchase-P_Youth, data = bc_train_bal)
+summary(glm2)
+
+```
+
+```{r, results='hide'}
+#| echo: false
+# Predict the probability on bbc_train - cutoff 0.5
+bbc_test$PredProb <- predict.glm(glm2, newdata = bbc_test, type = 'response')
+
+#create Prediction Indicators for y
+bbc_test$Pred_Y <- ifelse(bbc_test$PredProb >= 0.5, 1, 0)
+
+caret::confusionMatrix(as.factor(bbc_test$Choice),as.factor(bbc_test$Pred_Y), positive = '1') #this function and , positive = '1'
+
+## 89.96 Accuracy
+## 41.29 Sensitivity
+## 93.47 Specificity
+
+#create Prediction Indicators for y
+bbc_test$Pred_Y <- ifelse(bbc_test$PredProb >= 0.8, 1, 0)
+
+caret::confusionMatrix(as.factor(bbc_test$Choice),as.factor(bbc_test$Pred_Y), positive = '1') #this function and , positive = '1'
+
+## 91.3 Accuracy
+## 83 Sensitivity
+## 91.3 Specificity
+
 ```
 
 ```{r VIF Final GLM Model, results='hide'}
@@ -69,32 +99,19 @@ summary(glm1)
 vif(glm1)
 ```
 
-
-
-
-##### **Paper Starts Here**
-
 # Executive Summary
-
-*Brief introduction of problem. Summarizes key findings. Summarizes insights behind key findings.*
 
 Our goal is to make a cost-effective decision for the book marketing campaign by either using a statistical model to target likely buyers or, if not worthwhile, sending the offer to everyone on our list to maximize profitability.
 
-We used three models---GLM, SVM, and LDA. The model that outperformed the others is: ADD MODEL. What we found is ADD KEY FINDINGS
+By leveraging our GLM model with a specificity rate of 91%, we can accurately identify which customers should receive marketing flyers. This targeted approach is projected to yield a 200% increase in profit from art book sales compared to sending flyers to the entire customer base. The profit increase is largely attributed to the significant reduction in mailing costs by focusing on a smaller group of customers who are more likely to make a purchase.
 
 # Our Problem
 
-*Clear description of the problem, from an application and theoretical point of view. Outlines the report.*
-
 For this study case our goal is to evaluate how effective three different models are and compare them with the option of creating this campaign without a model. We are trying to determine which model will provide the best balance between cost savings and profit. By analyzing the performance of each model and comparing it against the campaign, we will identify the most cost-effective approach that maximizes profit.
 
-The three models we are comparing are the Linear Model (LM), Generalized Linear Model (GLM), and Support Vector Machine (SVM). Although we anticipate that the linear model may not perform well, we are still interested in understanding why it may not be the best fit for this case study. This exploration will help us gain valuable insights into the limitations of the linear model in this context and guide our decision-making process.
-
-**He said that we don't have to use the 50k population for our calculation to find which way would be best for the campaign. Email everyone in the 2300 or just a group of people based on our model.**
+The three models we are comparing are the **Linear Model (LM)**, **Generalized Linear Model (GLM)**, and **Support Vector Machine (SVM)**. Although we anticipate that the linear model may not perform well, we are still interested in understanding why it may not be the best fit for this case study. This exploration will help us gain valuable insights into the limitations of the linear model in this context and guide our decision-making process.
 
 # Literature Review
-
-*Discusses and cites existing works in the theoretical and application realm.*
 
 The use of predictive modeling in marketing has been widely documented in both theoretical and applied settings. Predictive models, including linear regression, logistic regression, and support vector machines (SVM), have long been used to anticipate customer behavior based on historical data. In particular, database marketing, which focuses on analyzing customer data to personalize marketing efforts, has been a critical development in direct mail campaigns since the 1990s. According to Wilhelm (1994), database-driven approaches allow for the creation of tailored marketing strategies, improving response rates and customer engagement.
 
@@ -108,8 +125,6 @@ This approach is reinforced by the work of Levin and Zahavi (1994), who explored
 
 # Methods
 
-*Discusses types of variables, sample size, and sampling techniques (if any). Discusses the model(s) and its assumptions and limitations.*
-
 We began our analysis by converting two variables, choice and gender, into factors. Additionally, we transformed *First_purchase* and *Last_purchase* into factor variables with four discrete buckets. However, we later chose not to include these variables in the final GLM model due to concerns about multicollinearity between them. The training dataset contained 1,600 observations, while the testing dataset had 2,300 observations.
 
 Throughout the analysis, we utilized several models: logistic regression, Support Vector Machine (SVM), and Linear Discriminant Analysis (LDA). Although we initially considered using a linear regression model, it was not suitable for our problem because the response variable was binary.
@@ -121,8 +136,6 @@ In the case of the SVM model, we assumed that the data was linearly separable an
 Finally, for the LDA model, we assumed that the data was normally distributed within each class, that there was homoscedasticity (i.e., equal variance-covariance structure across classes), that the classes were linearly separable, and that the observations were independent.
 
 # Data
-
-*Discusses how data was handled, i.e. cleaned and preprocessed. Discusses distributions, correlations, etc.*
 
 ## Distribution Plots
 
@@ -159,19 +172,15 @@ ggplot(bbbc_long, aes(x = Value)) +
   theme(strip.text = element_text(face = "bold"))
 ```
 
-## Clean up
-
-We modified two variables into factors, and we created categories for ADD STUFF HERE?
-
 ## Correlation
 
-The graph below highlights the variables with the highest correlations. We observed that *first_purchased* and *last_purchased* exhibit the strongest correlation. Based on this, we decided to create labels for these two variables to test their potential impact on our model's performance.. **ADD STUFF ABOUT RESULTS. DID IT WORK OR DID IT MAKE IT WORST?**
+The graph below shows the variables with the highest correlations, with *First_purchased* and *Last_purchased* having the strongest correlation. Based on this observation, we created labels for these two variables to test their impact on the model's performance. However, our results indicated that including them did not improve the model, so we chose to exclude them.
 
 ```{r, Correlation Plot, echo=FALSE}
 #Added this correlation plot in case we need it
 
 cor_train = bbc_train %>% 
-  select(-Observation, -Gender, - Choice)
+  dplyr::select(-Observation, -Gender, - Choice)
 #dplyr::select_if(train, is.numeric)
 M = cor(cor_train)
 corrplot(M, method = c("color"))
@@ -179,22 +188,20 @@ corrplot(M, method = c("color"))
 
 # Results
 
-*Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.*
-
 ## GLM Results
 
 Here we will be discussing the outputs from our logistic model we applied to the data set to best predict if someone will purchase a book - Choice (1/0). We first begin with all the variables in the data set to see which independent variables are significant.
 
-For our model, we first ran the GLM removing the observations variable and from our results ew noticed that the variable *Last_Purchase* had the largest VIF so we decided to remove that from the model. On our second run of the GLM, we found that *First_purchase* now had the largest VIF so we decided to remove from our second iteration of the model. On our third iteration, we found that P_Youth had a p-value greater than 0.05 so we removed it from our final model. Our final model (below), includes all the significant variables
+We initially ran a GLM excluding the Observation variable. From the results, we identified that Last_Purchase had the highest VIF, prompting its removal. In the second iteration, First_purchase showed the highest VIF, so we excluded it as well. In the third iteration, P_Youth had a p-value greater than 0.05, leading us to remove it from the model. Our final model, shown below, includes all the remaining significant variables.
 
 ### GLM Final Model
 
 ```{r, warning=FALSE}
 #| echo: false
 
-glm1_summary <- tidy(glm1)
+glm2_summary <- tidy(glm1)
 
-gt(glm1_summary) %>%
+gt(glm2_summary) %>%
   tab_header(title = "Logistic Regression Results",
              subtitle = "Summary of Model Coefficients") %>%
   cols_label(
@@ -206,7 +213,6 @@ gt(glm1_summary) %>%
   fmt_number(columns = vars(estimate, std.error, statistic, p.value),
     decimals = 4)
 ```
-
 
 ```{r, warning=FALSE}
 #| echo: false
@@ -220,7 +226,6 @@ vif_table = data.frame(
 kable(vif_table, col.names = c("Variable", "VIF"), caption = "Variance Inflation Factors")
 
 ```
-
 
 ### GLM Odds Ratio
 
@@ -263,7 +268,7 @@ With this model, we then use it on our bbc_test sample to see how well it predic
 
 ### GLM Confusion Matrix
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, results='hide'}
 #| echo: false
 # Predict the probability on bbc_train - cutoff 0.5
 bbc_test$PredProb <- predict.glm(glm1, newdata = bbc_test, type = 'response')
@@ -287,7 +292,6 @@ caret::confusionMatrix(as.factor(bbc_test$Choice),as.factor(bbc_test$Pred_Y), po
 ## 91.3 Specificity
 
 ```
-
 
 ```{r}
 #| echo: false
@@ -334,38 +338,90 @@ We see the best cutoff for the highest sensitivity is at 0.8. With this, the per
 
 ## LDA
 
-```{r}
-lda_final <- lda(Choice~. - First_purchase - Last_purchase - Observation - First_purchase_quartile - Last_purchase_quartile, bc_train_bal)
+The LDA model summary presents the coefficients for each variable and the overall model accuracy. Key variables like Gender, Frequency, P_Child, P_Cook, and P_DIY have negative coefficients, indicating a negative relationship with the outcome, while Amount_purchased and P_Art show positive coefficients, with P_Art having the strongest positive impact (1.0525). The model achieved an overall accuracy of 0.7457, suggesting that it performs moderately well in predicting the target outcome based on these variables.
+
+```{r, results='hide', warning=FALSE}
+#| echo: false
+
+lda_final <- lda(Choice~. - First_purchase - Last_purchase - Observation, bc_train_bal)
 lda_final
 
 predictions.lda_final <- predict(lda_final, bbc_test)
 ```
 
+```{r, LDA Model, warning=FALSE}
+#| echo: false
+
+# Fit the LDA model
+lda_final <- lda(Choice ~ . - First_purchase - Last_purchase - Observation, data = bc_train_bal)
+
+# Extract coefficients (scaling) from the LDA model
+lda_coefficients <- as.data.frame(lda_final$scaling)
+lda_coefficients$Variable <- rownames(lda_coefficients)
+rownames(lda_coefficients) <- NULL
+
+# Reorganize the data frame for the gt table
+lda_display <- lda_coefficients[, c("Variable", "LD1")]
+
+# Rename the column for clarity
+colnames(lda_display) <- c("Variable", "Coefficient")
+
+# Make predictions on the test set
+predictions_lda_final <- predict(lda_final, newdata = bbc_test)
+
+# Calculate the accuracy based on predictions
+conf_matrix <- table(Predicted = predictions_lda_final$class, Actual = bbc_test$Choice)
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+
+# Add the accuracy as an additional row in the table
+lda_display <- rbind(lda_display, data.frame(Variable = "Model Accuracy", Coefficient = round(accuracy, 4)))
+
+```
+
+```{r, warning=FALSE}
+#| echo: false
+
+gt(lda_display) %>%
+  tab_header(
+    title = "LDA Model Coefficients and Accuracy",
+    subtitle = "Summary of the LDA Model and its Performance") %>%
+  cols_label(
+    Variable = "Term/Metric",
+    Coefficient = "Value") %>%
+  fmt_number(
+    columns = vars(Coefficient),
+    decimals = 4)
+
+```
 
 ## SVM
 
+Our ouput shows our gamma and cost for our best model. Our gamma is 0.05 and Cost is 0.1.
 
+```{r, SVM Model, warning=FALSE}
+#| echo: false
 
+svm_final <- tune.svm(Choice~. - First_purchase - Last_purchase 
+                      - Observation, data = bc_train_bal, 
+                      gamma = seq(.01,.1, by = .01),
+                      cost = seq(.1, 1, by = .1))
 
+svm_final$best.parameters
 
+svm_best_final <- svm(Choice~. - First_purchase - Last_purchase 
+                      - Observation, data = bc_train_bal, 
+                      gamma = svm_final$best.parameters$cost, 
+                      cost = svm_final$best.parameters$cost)
 
+preds.svm_best_final <- predict(svm_best_final, bbc_test, type = "Response")
+```
 
 # Conclusion
 
-*Concludes with a summary of the aim and results. Discusses alternative methods that can be used.*
+If we send mailers to all 50,000 customers, we project a profit of approximately \$16,970. This calculation is based on the expected 4,848 purchases (derived from the proportion of customers who bought a book in our test data) multiplied by a \$10.20 profit per book, minus the \$0.65 mailing cost per address. However, by using our model, we could reduce mailing costs by around \$29,000 by targeting only the most likely buyers.
 
-Based on our analysis, the **ADD MODEL**
+In comparing models, we found that both the SVM and LDA models achieved more balanced specificity and sensitivity, while the logistic regression model had a higher sensitivity compared to specificity. Ultimately, we chose the logistic regression model because it offered the highest sensitivity. This decision was based on our goal to identify customers likely to purchase a book, where false positives are acceptable, especially given our model's 91% specificity.
 
-**Add details on if it is better to use model or just send campaign to everyone in the list.**
+I recommend that the company consider building an in-house team to manage this process, as the model predicts a 200% increase in profit when applied. This increase comes primarily from the significant reduction in mailing costs while still targeting the right customers.
 
-# STUFF FROM THE PDF
-
-Summarize the results of your analysis for the three models. The training, testing, and prediction data can be found on Blackboard.
-
-Interpret the results of the models. In particular, for models the influential covariates and their coefficients, provide insights.
-
-BBBC is considering a similar mail campaign in the Midwest where it has data for 50,000 customers. Such mailings typically promote several books. The allocated cost of the mailing is \$0.65/addressee (including postage) for the art book, and the book costs \$15 to purchase and mail. The company allocates overhead to each book at 45% of cost. The selling price of the book is \$31.95. Based on the model, which customers should Bookbinders target? How much more profit would you expect the company to generate using these models as compare to sending the mail offer to the entire list.
-
-Please also summarize the advantages and disadvantages of the three models, as you experienced in the modeling exercise. Should the company develop expertise in either (or all) of these methods to develop in-house capability to evaluate its direct mail campaigns.
-
-How would you simplify and automate your recommended method(s) for future modeling efforts at the company?
+To streamline our process, we focused only on the most significant variables for the GLM model, excluding three variables that were less relevant. This refinement enhanced the efficiency of data collection and improved the overall effectiveness of the model. For instance, insights from our LDA model revealed that past purchases of art books are strong predictors of future purchases, enabling us to better target customers. By incorporating these insights, we can enhance the accuracy and efficiency of our marketing efforts, ultimately making the entire process more streamlined and cost-effective.
