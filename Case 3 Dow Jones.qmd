@@ -5,23 +5,37 @@ format: pdf
 editor: visual
 ---
 
-## Quarto
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
 
-## Running Code
+```{r, loading data, echo=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
 
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
-```{r}
-1 + 1
+getwd() #open R project file to have the same file path
+dow_data = read.csv('Data/dow_jones_index.data') # change variable name to match code
+dow_names = read.csv('Data/dow_jones_index.names')  # change variable name to match code
 ```
 
-You can add options to executable code like this
 
-```{r}
-#| echo: false
-2 * 2
-```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+# START REPORT BELOW
+
+# Executive Summary
+
+
+# Problem
+
+
+# Lit. Review
+
+
+# Methods
+
+
+# Data
+
+
+# Results
+
+
+# Conclusions
