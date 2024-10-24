@@ -11,7 +11,6 @@ library(ggplot2)
 
 ```
 
-
 ```{r, loading data, cleaning and splitting}
 #getwd() #open R project file to have the same file path
 dow_data = read.csv('Data/dow_jones_index.data') # change variable name to match code
@@ -37,8 +36,6 @@ test = dow_data %>%
 
 ```
 
-
-
 ```{r, summary, echo=FALSE, results='hide'}
 summary(dow_data)
 ```
@@ -53,9 +50,9 @@ colSums(is.na(dow_data))
 
 ```{r, unique stocks, echo=False, results='hide'}
 unique(dow_data$stock)
+
+#{{< pagebreak >}} 
 ```
-
-
 
 # START REPORT BELOW
 
@@ -67,9 +64,21 @@ unique(dow_data$stock)
 
 *Clear description of the problem, from an application and theoretical point of view. Outlines the report.*
 
+Our problem is to use historical weekly return data for 30 stocks in the Dow Jones Index to predict which stock will produce the greatest rate of return in the following week. From an application standpoint, this involves analyzing stock price trends and using past performance data to inform future investment decisions. The goal is to build predictive models using this historical data to maximize future returns.
+
+ADD SHIT HERE
+
+We will utilize the variables in our dataset to build several predictive models to forecast future stock returns. After constructing these models, we will evaluate their performance to determine which one offers the most accurate predictions.
+
+
+
 # Lit. Review
 
 *Discusses and cites existing works in the theoretical and application realm.*
+
+I havent read it completely but maybe we can use this for our lit review. https://www.sciencedirect.com/science/article/pii/S1877050922021937
+
+papers citing this dataset https://archive.ics.uci.edu/dataset/312/dow+jones+index
 
 # Methods
 
