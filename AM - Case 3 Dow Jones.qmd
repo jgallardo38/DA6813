@@ -1,0 +1,215 @@
+---
+title: "Case 3 - Dow Jones"
+author: "Josh Gardner, Alex Martinez, Cameron Playle, and Guillermo Gallardo"
+format: pdf
+editor: visual
+---
+
+```{r, loading libraries, echo=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+
+```
+
+
+### CREATING A DECISION TREE MODEL
+```{r}
+library(tree)
+library(ISLR)
+```
+
+Creating binary variable for classification
+```{r}
+#getwd() #open R project file to have the same file path
+dow_data = read.csv('Data/dow_jones_index.data') # change variable name to match code
+
+
+
+## Taking the $ sign off
+dow_data <- dow_data %>%
+  mutate(
+    open = as.numeric(gsub("\\$", "", open)),
+    high = as.numeric(gsub("\\$", "", high)),
+    low = as.numeric(gsub("\\$", "", low)),
+    next_weeks_open = as.numeric(gsub("\\$", "", next_weeks_open)),
+    next_weeks_close = as.numeric(gsub("\\$", "", next_weeks_close)),
+    close = as.numeric(gsub("\\$", "", close)))
+
+
+
+## remove missing values
+dow_data <- na.omit(dow_data)
+
+dow_data$Positive_percent_change_ind <- factor(ifelse(dow_data$percent_change_next_weeks_price > 0, "1", "0"))
+
+## Spltting data based on PDF
+train = dow_data %>% 
+  filter(quarter == 1) %>% select(-percent_change_next_weeks_price, -quarter, -date)
+
+test = dow_data %>% 
+  filter(quarter == 2) %>% select(-percent_change_next_weeks_price, -quarter, -date)
+
+```
+
+
+### DECISION TREEE
+```{r}
+## grow tree
+Stock_tree <- tree(Positive_percent_change_ind ~ ., data = train)
+
+## default output
+Stock_tree
+
+## result summary
+summary(Stock_tree)
+
+
+## plot tree
+plot(Stock_tree)
+text(Stock_tree, cex = 0.55)
+```
+### PREDICTING ON TEST
+```{r}
+# Evaluating
+pred <- predict(Stock_tree, newdata = test, type = "class")
+
+# accuarcy
+table(pred, test$Positive_percent_change_ind)
+
+```
+
+# PRUNING THE DECISION TREE
+```{r}
+set.seed(11)
+cv_tree <- cv.tree(Stock_tree, FUN = prune.misclass)
+cv_tree
+
+
+# plot the estimared error from cross-validation
+par(mfrow = c(1,2))
+
+plot(cv_tree$size, cv_tree$dev, type = "b")
+plot(cv_tree$k, cv_tree$dev, type = "b")
+
+# best tree with smallest k (small prune, and tree size is large)
+best_size <- cv_tree$size[which.min(cv_tree$dev)]
+
+
+# building prune model
+prune_tree <- prune.misclass(Stock_tree, best = best_size)
+
+# plot prune tree
+plot(prune_tree)
+text(prune_tree, cex = .55)
+
+
+# get predictions
+pred_prune <- predict(prune_tree, newdata = test, type = "class")
+
+#check accuracy
+table(pred_prune, test$Positive_percent_change_ind)
+
+
+```
+
+
+
+
+
+```{r, loading data, cleaning and splitting}
+#getwd() #open R project file to have the same file path
+dow_data = read.csv('Data/dow_jones_index.data') # change variable name to match code
+#dow_names = read.csv('Data/dow_jones_index.names')  # change variable name to match code
+
+
+## Taking the $ sign off
+dow_data <- dow_data %>%
+  mutate(
+    open = as.numeric(gsub("\\$", "", open)),
+    high = as.numeric(gsub("\\$", "", high)),
+    low = as.numeric(gsub("\\$", "", low)),
+    next_weeks_open = as.numeric(gsub("\\$", "", next_weeks_open)),
+    next_weeks_close = as.numeric(gsub("\\$", "", next_weeks_close)),
+    close = as.numeric(gsub("\\$", "", close)))
+
+## Spltting data based on PDF
+train = dow_data %>% 
+  filter(quarter == 1)
+
+test = dow_data %>% 
+  filter(quarter == 2)
+
+```
+
+```{r, summary, echo=FALSE, results='hide'}
+summary(dow_data)
+```
+
+```{r, structure, echo=FALSE, results='hide'}
+str(dow_data)
+```
+
+```{r, NAs, echo=False, results='hide'}
+colSums(is.na(dow_data))
+```
+
+```{r, unique stocks, echo=False, results='hide'}
+unique(dow_data$stock)
+
+#{{< pagebreak >}} 
+```
+
+# START REPORT BELOW
+
+# Executive Summary
+
+*Brief introduction of problem. Summarizes key findings. Summarizes insights behind key findings.*
+
+# Problem
+
+*Clear description of the problem, from an application and theoretical point of view. Outlines the report.*
+
+Our problem is to use historical weekly return data for 30 stocks in the Dow Jones Index to predict which stock will produce the greatest rate of return in the following week. From an application standpoint, this involves analyzing stock price trends and using past performance data to inform future investment decisions. The goal is to build predictive models using this historical data to maximize future returns.
+
+ADD SHIT HERE
+
+We will utilize the variables in our dataset to build several predictive models to forecast future stock returns. After constructing these models, we will evaluate their performance to determine which one offers the most accurate predictions.
+
+
+
+# Lit. Review
+
+*Discusses and cites existing works in the theoretical and application realm.*
+
+I havent read it completely but maybe we can use this for our lit review. https://www.sciencedirect.com/science/article/pii/S1877050922021937
+
+papers citing this dataset https://archive.ics.uci.edu/dataset/312/dow+jones+index
+
+# Methods
+
+*Discusses types of variables, sample size, and sampling techniques (if any). Discusses the model(s) and its assumptions and limitations.*
+
+# Data
+
+*Discusses how data was handled, i.e. cleaned and preprocessed. Discusses distributions, correlations, etc.*
+
+Our dataset is fairly clean overall, with only 60 total NA values across two columns: 30 in *percent_change_volume_over_last_wk* and 30 in *previous_weeks_volume*. These NAs occur because they correspond to the first week of data, where there is no previous week to calculate the volume change. The dataset contains 750 observations and 16 variables.
+
+For our variables, there are is mix of variables types. Variables like *volume*, *percent_change_price*, *percent_change_volume_over_last_wk*, and *days_to_next_dividend* are numerical. However, some variables, such as *open*, *high*, *low*, *close*, *next_weeks_open*, and *next_weeks_close*, are stored as characters due to the presence of dollar signs. These will need to be transformed into numeric values for accurate analysis.
+
+```{r, Distribution Plot, echo=FALSE}
+
+
+```
+
+```{r, Correlation, echo=FALSE}
+
+```
+
+# Results
+
+*Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.*
+
+# Conclusions
+
+*Concludes with a summary of the aim and results. Discusses alternative methods that can be used.*
