@@ -8,7 +8,8 @@ editor: visual
 ```{r, loading libraries, echo=FALSE, warning=FALSE}
 library(dplyr)
 library(ggplot2)
-
+library(tree)
+library(ISLR)
 ```
 
 ```{r, loading data, cleaning and splitting}
@@ -19,22 +20,89 @@ dow_data = read.csv('Data/dow_jones_index.data') # change variable name to match
 
 ## Taking the $ sign off
 dow_data <- dow_data %>%
-  mutate(
-    open = as.numeric(gsub("\\$", "", open)),
-    high = as.numeric(gsub("\\$", "", high)),
-    low = as.numeric(gsub("\\$", "", low)),
-    next_weeks_open = as.numeric(gsub("\\$", "", next_weeks_open)),
-    next_weeks_close = as.numeric(gsub("\\$", "", next_weeks_close)),
-    close = as.numeric(gsub("\\$", "", close)))
+  mutate(open = as.numeric(gsub("\\$", "", open)),
+         high = as.numeric(gsub("\\$", "", high)),
+         low = as.numeric(gsub("\\$", "", low)),
+         next_weeks_open = as.numeric(gsub("\\$", "", next_weeks_open)),
+         next_weeks_close = as.numeric(gsub("\\$", "", next_weeks_close)),
+         close = as.numeric(gsub("\\$", "", close)))
 
-## Spltting data based on PDF
+## remove missing values
+dow_data <- na.omit(dow_data)
+
+dow_data$Positive_percent_change_ind <- factor(ifelse(dow_data$percent_change_next_weeks_price > 0, "1", "0"))
+
+## Splitting data based on PDF
 train = dow_data %>% 
-  filter(quarter == 1)
+  filter(quarter == 1) %>%
+  select(-percent_change_next_weeks_price, -quarter, -date)
 
 test = dow_data %>% 
-  filter(quarter == 2)
+  filter(quarter == 2) %>%
+  select(-percent_change_next_weeks_price, -quarter, -date)
 
 ```
+
+```{r, Decision Tree, echo=FALSE, warning=FALSE}
+## grow tree
+Stock_tree <- tree(Positive_percent_change_ind ~ ., data = train)
+
+## default output
+Stock_tree
+
+## result summary
+summary(Stock_tree)
+
+
+## plot tree
+plot(Stock_tree)
+text(Stock_tree, cex = 0.55)
+```
+
+
+```{r, Predicting on Test, echo=FALSE, warning=FALSE}
+# Evaluating
+pred <- predict(Stock_tree, newdata = test, type = "class")
+
+# accuarcy
+table(pred, test$Positive_percent_change_ind)
+
+```
+
+
+```{r, Pruning Decision Tree, echo=FALSE, warning=FALSE}
+set.seed(11)
+cv_tree <- cv.tree(Stock_tree, FUN = prune.misclass)
+cv_tree
+
+
+# plot the estimated error from cross-validation
+par(mfrow = c(1,2))
+
+plot(cv_tree$size, cv_tree$dev, type = "b")
+plot(cv_tree$k, cv_tree$dev, type = "b")
+
+# best tree with smallest k (small prune, and tree size is large)
+best_size <- cv_tree$size[which.min(cv_tree$dev)]
+
+
+# building prune model
+prune_tree <- prune.misclass(Stock_tree, best = best_size)
+
+# plot prune tree
+plot(prune_tree)
+text(prune_tree, cex = .55)
+
+
+# get predictions
+pred_prune <- predict(prune_tree, newdata = test, type = "class")
+
+#check accuracy
+table(pred_prune, test$Positive_percent_change_ind)
+
+
+```
+
 
 ```{r, summary, echo=FALSE, results='hide'}
 summary(dow_data)
@@ -53,6 +121,9 @@ unique(dow_data$stock)
 
 #{{< pagebreak >}} 
 ```
+
+
+
 
 # START REPORT BELOW
 
@@ -75,10 +146,13 @@ We will utilize the variables in our dataset to build several predictive models 
 # Lit. Review
 
 *Discusses and cites existing works in the theoretical and application realm.*
+Article: http://www.warse.org/IJATCSE/static/pdf/file/ijatcse135952020.pdf 
 
-I havent read it completely but maybe we can use this for our lit review. https://www.sciencedirect.com/science/article/pii/S1877050922021937
+This article explores several advanced machine learning models for stock price forecasting—approaches we haven’t yet used in our project but that offer valuable insights into different paths toward achieving similar goals. In our MSDA program, we’re currently learning about CNNs and how they work to detect cyberbullying by processing images, a completely different application than stock forecasting, but it’s interesting to see the versatility of these models. The authors review models like Long Short-Term Memory (LSTM) and Convolutional Neural Networks (CNN), each with unique strengths in time series analysis. LSTM, for instance, overcomes traditional limitations in recurrent neural networks by retaining long-term dependencies, making it effective for capturing stock trends. An extension, Bidirectional LSTM (BLSTM), improves accuracy further by processing data in both forward and backward directions, helpful for understanding nuanced market shifts (Zonathan et al., 2020)​
 
-papers citing this dataset https://archive.ics.uci.edu/dataset/312/dow+jones+index
+In this study, CNN-based models were adapted for stock data by transforming one-dimensional time series into two-dimensional representations, allowing CNN to detect complex patterns. The CNNPred model, for example, demonstrated high accuracy on major indices like the S&P 500, illustrating how CNN can be effectively applied to stock data.
+
+The findings on hybrid CNN-LSTM models are particularly intriguing. By combining CNN’s feature extraction with LSTM’s temporal modeling, the CNN-LSTM model achieved the lowest RMSE score, showing strength in forecasting stock prices under volatile conditions. While our project hasn’t yet explored such hybrid models, this study shows there are multiple, innovative ways we could leverage these models as we refine our forecasting objectives​
 
 # Methods
 
