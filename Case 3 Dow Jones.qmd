@@ -124,7 +124,6 @@ unique(dow_data$stock)
 
 
 
-
 # START REPORT BELOW
 
 # Executive Summary
@@ -135,12 +134,13 @@ unique(dow_data$stock)
 
 *Clear description of the problem, from an application and theoretical point of view. Outlines the report.*
 
-Our problem is to use historical weekly return data for 30 stocks in the Dow Jones Index to predict which stock will produce the greatest rate of return in the following week. From an application standpoint, this involves analyzing stock price trends and using past performance data to inform future investment decisions. The goal is to build predictive models using this historical data to maximize future returns.
+Our problem is to use historical weekly return data for 30 stocks in the Dow Jones Index to predict which stock will produce the greatest rate of return in the following week. From an application standpoint, this involves analyzing stock price trends and using past performance data to inform future investment decisions. The goal is to build predictive models using this historical data to maximize future returns. 
 
-ADD SHIT HERE
+To achieve this, we will conduct separate analyses for each stock, calculating the average predictive accuracy across all stocks. This approach will allow us to identify the model that provides the highest rate of return predictions, guiding us in selecting the most effective forecasting method.
 
 We will utilize the variables in our dataset to build several predictive models to forecast future stock returns. After constructing these models, we will evaluate their performance to determine which one offers the most accurate predictions.
 
+ADD CAPM SHIT HERE - HOW WE WILL USE IT, WHAT IT TELLS US, ETC
 
 
 # Lit. Review
@@ -158,13 +158,26 @@ The findings on hybrid CNN-LSTM models are particularly intriguing. By combining
 
 *Discusses types of variables, sample size, and sampling techniques (if any). Discusses the model(s) and its assumptions and limitations.*
 
+## Decision Trees
+
+
+## SVR
+
+
+## LM
+
+
+## CAPM
+
+
 # Data
 
 *Discusses how data was handled, i.e. cleaned and preprocessed. Discusses distributions, correlations, etc.*
 
-Our dataset is fairly clean overall, with only 60 total NA values across two columns: 30 in *percent_change_volume_over_last_wk* and 30 in *previous_weeks_volume*. These NAs occur because they correspond to the first week of data, where there is no previous week to calculate the volume change. The dataset contains 750 observations and 16 variables.
+Our dataset is fairly clean overall, with only 60 total NA values across two columns: 30 in *percent_change_volume_over_last_wk* and 30 in *previous_weeks_volume*. These NAs occur because they correspond to the first week of data, where there is no previous week to calculate the volume change so we decided to omit the NAs. The dataset contains 750 observations and 16 variables, which we will split by quarters: quarter one will be used for training, and quarter two for testing.
 
 For our variables, there are is mix of variables types. Variables like *volume*, *percent_change_price*, *percent_change_volume_over_last_wk*, and *days_to_next_dividend* are numerical. However, some variables, such as *open*, *high*, *low*, *close*, *next_weeks_open*, and *next_weeks_close*, are stored as characters due to the presence of dollar signs. These will need to be transformed into numeric values for accurate analysis.
+
 
 ```{r, Distribution Plot, echo=FALSE}
 
@@ -179,6 +192,12 @@ For our variables, there are is mix of variables types. Variables like *volume*,
 
 *Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.*
 
+ADD TABLE BY STOCK HE MENTIONED DURING CLASS
+
+
 # Conclusions
 
 *Concludes with a summary of the aim and results. Discusses alternative methods that can be used.*
+
+
+Based on the results (ADD TABLE VIEW BY STOCK WITH RESULTS?) we see that the model that outperforms the others is ADD STUFF. ADD STUFF.
