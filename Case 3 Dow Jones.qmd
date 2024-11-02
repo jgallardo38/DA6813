@@ -10,6 +10,7 @@ library(dplyr)
 library(ggplot2)
 library(tree)
 library(ISLR)
+library(caret)
 ```
 
 ```{r, loading data, cleaning and splitting}
@@ -20,28 +21,101 @@ dow_data = read.csv('Data/dow_jones_index.data') # change variable name to match
 
 ## Taking the $ sign off
 dow_data <- dow_data %>%
-  mutate(open = as.numeric(gsub("\\$", "", open)),
-         high = as.numeric(gsub("\\$", "", high)),
-         low = as.numeric(gsub("\\$", "", low)),
-         next_weeks_open = as.numeric(gsub("\\$", "", next_weeks_open)),
-         next_weeks_close = as.numeric(gsub("\\$", "", next_weeks_close)),
-         close = as.numeric(gsub("\\$", "", close)))
+  mutate(
+    open = as.numeric(gsub("\\$", "", open)),
+    high = as.numeric(gsub("\\$", "", high)),
+    low = as.numeric(gsub("\\$", "", low)),
+    next_weeks_open = as.numeric(gsub("\\$", "", next_weeks_open)),
+    next_weeks_close = as.numeric(gsub("\\$", "", next_weeks_close)),
+    close = as.numeric(gsub("\\$", "", close)))
+
+
+
+## remove missing values
+dow_data <- na.omit(dow_data)
+
+# create classification variable
+dow_data$Positive_percent_change_ind <- factor(ifelse(dow_data$percent_change_next_weeks_price > 0, "1", "0"))
+
+
+# creating table to store each stock performance
+Stock_Performance <- data.frame(stock = character(), accuracy = numeric(), stringsAsFactors = FALSE)
+
+# Loop through each unique stock 
+for(stock_name in unique(dow_data$stock)) {
+  
+  # Filter data for the current stock
+  filtered_data <- dow_data %>% filter(stock == stock_name)
+  
+  # Split data based on quarters
+  train <- filtered_data %>% 
+    filter(quarter == 1) %>% 
+    select(-percent_change_next_weeks_price, -quarter, -date)
+  
+  test <- filtered_data %>% 
+    filter(quarter == 2) %>% 
+    select(-percent_change_next_weeks_price, -quarter, -date)
+  
+  # Check if we have sufficient data for both train and test
+    
+    # Grow tree model
+    Stock_tree <- tree(Positive_percent_change_ind ~ ., data = train)
+    
+    test$pred <- predict(Stock_tree, newdata = test, type = "class")
+    
+    # accuracy
+    table(test$pred, test$Positive_percent_change_ind)
+    cm <- confusionMatrix(test$pred, test$Positive_percent_change_ind)
+    accuracy <- cm$overall['Accuracy']
+    
+    
+    # Adding stock name and accuracy
+    Stock_Performance <- rbind(Stock_Performance, data.frame(stock = stock_name, accuracy = as.numeric(accuracy)))
+  
+}
+
+
+# Order by largest accuracy
+Stock_Performance <- Stock_Performance %>% arrange(desc(accuracy))
+print(Stock_Performance)
+
+
+```
+
+
+```{r}
+#getwd() #open R project file to have the same file path
+dow_data = read.csv('Data/dow_jones_index.data') # change variable name to match code
+
+
+
+## Taking the $ sign off
+dow_data <- dow_data %>%
+  mutate(
+    open = as.numeric(gsub("\\$", "", open)),
+    high = as.numeric(gsub("\\$", "", high)),
+    low = as.numeric(gsub("\\$", "", low)),
+    next_weeks_open = as.numeric(gsub("\\$", "", next_weeks_open)),
+    next_weeks_close = as.numeric(gsub("\\$", "", next_weeks_close)),
+    close = as.numeric(gsub("\\$", "", close)))
+
+
 
 ## remove missing values
 dow_data <- na.omit(dow_data)
 
 dow_data$Positive_percent_change_ind <- factor(ifelse(dow_data$percent_change_next_weeks_price > 0, "1", "0"))
 
-## Splitting data based on PDF
+## Spltting data based on PDF
 train = dow_data %>% 
-  filter(quarter == 1) %>%
-  select(-percent_change_next_weeks_price, -quarter, -date)
+  filter(quarter == 1) %>% select(-percent_change_next_weeks_price, -quarter, -date)
 
 test = dow_data %>% 
-  filter(quarter == 2) %>%
-  select(-percent_change_next_weeks_price, -quarter, -date)
+  filter(quarter == 2) %>% select(-percent_change_next_weeks_price, -quarter, -date)
 
 ```
+
+
 
 ```{r, Decision Tree, echo=FALSE, warning=FALSE}
 ## grow tree
@@ -76,7 +150,7 @@ cv_tree <- cv.tree(Stock_tree, FUN = prune.misclass)
 cv_tree
 
 
-# plot the estimated error from cross-validation
+# plot the estimared error from cross-validation
 par(mfrow = c(1,2))
 
 plot(cv_tree$size, cv_tree$dev, type = "b")
@@ -104,17 +178,33 @@ table(pred_prune, test$Positive_percent_change_ind)
 ```
 
 
-```{r, summary, echo=FALSE, results='hide'}
-summary(dow_data)
+```{r Regression Decision Tree, echo=FALSE, warning=FALSE}
+train2 = dow_data %>% 
+  filter(quarter == 1) %>% select(-Positive_percent_change_ind, -quarter, -date)
+
+test2 = dow_data %>% 
+  filter(quarter == 2) %>% select(-Positive_percent_change_ind, -quarter, -date)
+
+# GROWING TREE
+reg_tree <- tree(percent_change_next_weeks_price ~ . , data = train2)
+
+# plot tree
+plot(reg_tree)
+text(reg_tree, cex = .55)
+
+
+# pruning
+cv_reg_tree <- cv.tree(reg_tree)
+best_size2 <- cv_reg_tree$size[which.min(cv_reg_tree$dev)]
+
+
+# plot prunign tree
+plot(cv_reg_tree$size, cv_reg_tree$dev, type = "b")
+
+
+
 ```
 
-```{r, structure, echo=FALSE, results='hide'}
-str(dow_data)
-```
-
-```{r, NAs, echo=False, results='hide'}
-colSums(is.na(dow_data))
-```
 
 ```{r, unique stocks, echo=False, results='hide'}
 unique(dow_data$stock)
