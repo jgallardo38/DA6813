@@ -11,13 +11,14 @@ library(ggplot2)
 library(tree)
 library(ISLR)
 library(caret)
+library(tseries)
+library(quantmod)
 ```
 
 ```{r, loading data, cleaning and splitting}
 #getwd() #open R project file to have the same file path
 dow_data = read.csv('Data/dow_jones_index.data') # change variable name to match code
 #dow_names = read.csv('Data/dow_jones_index.names')  # change variable name to match code
-
 
 ## Taking the $ sign off
 dow_data <- dow_data %>%
@@ -27,7 +28,8 @@ dow_data <- dow_data %>%
     low = as.numeric(gsub("\\$", "", low)),
     next_weeks_open = as.numeric(gsub("\\$", "", next_weeks_open)),
     next_weeks_close = as.numeric(gsub("\\$", "", next_weeks_close)),
-    close = as.numeric(gsub("\\$", "", close)))
+    close = as.numeric(gsub("\\$", "", close))) %>% 
+  arrange(stock, date)
 
 
 
@@ -82,7 +84,6 @@ print(Stock_Performance)
 
 ```
 
-
 ```{r}
 #getwd() #open R project file to have the same file path
 dow_data = read.csv('Data/dow_jones_index.data') # change variable name to match code
@@ -115,8 +116,6 @@ test = dow_data %>%
 
 ```
 
-
-
 ```{r, Decision Tree, echo=FALSE, warning=FALSE}
 ## grow tree
 Stock_tree <- tree(Positive_percent_change_ind ~ ., data = train)
@@ -133,7 +132,6 @@ plot(Stock_tree)
 text(Stock_tree, cex = 0.55)
 ```
 
-
 ```{r, Predicting on Test, echo=FALSE, warning=FALSE}
 # Evaluating
 pred <- predict(Stock_tree, newdata = test, type = "class")
@@ -142,7 +140,6 @@ pred <- predict(Stock_tree, newdata = test, type = "class")
 table(pred, test$Positive_percent_change_ind)
 
 ```
-
 
 ```{r, Pruning Decision Tree, echo=FALSE, warning=FALSE}
 set.seed(11)
@@ -177,7 +174,6 @@ table(pred_prune, test$Positive_percent_change_ind)
 
 ```
 
-
 ```{r Regression Decision Tree, echo=FALSE, warning=FALSE}
 train2 = dow_data %>% 
   filter(quarter == 1) %>% select(-Positive_percent_change_ind, -quarter, -date)
@@ -205,14 +201,10 @@ plot(cv_reg_tree$size, cv_reg_tree$dev, type = "b")
 
 ```
 
-
 ```{r, unique stocks, echo=False, results='hide'}
 unique(dow_data$stock)
-
 #{{< pagebreak >}} 
 ```
-
-
 
 # START REPORT BELOW
 
@@ -224,7 +216,7 @@ unique(dow_data$stock)
 
 *Clear description of the problem, from an application and theoretical point of view. Outlines the report.*
 
-Our problem is to use historical weekly return data for 30 stocks in the Dow Jones Index to predict which stock will produce the greatest rate of return in the following week. From an application standpoint, this involves analyzing stock price trends and using past performance data to inform future investment decisions. The goal is to build predictive models using this historical data to maximize future returns. 
+Our problem is to use historical weekly return data for 30 stocks in the Dow Jones Index to predict which stock will produce the greatest rate of return in the following week. From an application standpoint, this involves analyzing stock price trends and using past performance data to inform future investment decisions. The goal is to build predictive models using this historical data to maximize future returns.
 
 To achieve this, we will conduct separate analyses for each stock, calculating the average predictive accuracy across all stocks. This approach will allow us to identify the model that provides the highest rate of return predictions, guiding us in selecting the most effective forecasting method.
 
@@ -232,17 +224,15 @@ We will utilize the variables in our dataset to build several predictive models 
 
 ADD CAPM SHIT HERE - HOW WE WILL USE IT, WHAT IT TELLS US, ETC
 
-
 # Lit. Review
 
-*Discusses and cites existing works in the theoretical and application realm.*
-Article: http://www.warse.org/IJATCSE/static/pdf/file/ijatcse135952020.pdf 
+*Discusses and cites existing works in the theoretical and application realm.* Article: http://www.warse.org/IJATCSE/static/pdf/file/ijatcse135952020.pdf
 
-This article explores several advanced machine learning models for stock price forecasting—approaches we haven’t yet used in our project but that offer valuable insights into different paths toward achieving similar goals. In our MSDA program, we’re currently learning about CNNs and how they work to detect cyberbullying by processing images, a completely different application than stock forecasting, but it’s interesting to see the versatility of these models. The authors review models like Long Short-Term Memory (LSTM) and Convolutional Neural Networks (CNN), each with unique strengths in time series analysis. LSTM, for instance, overcomes traditional limitations in recurrent neural networks by retaining long-term dependencies, making it effective for capturing stock trends. An extension, Bidirectional LSTM (BLSTM), improves accuracy further by processing data in both forward and backward directions, helpful for understanding nuanced market shifts (Zonathan et al., 2020)​
+This article explores several advanced machine learning models for stock price forecasting---approaches we haven't yet used in our project but that offer valuable insights into different paths toward achieving similar goals. In our MSDA program, we're currently learning about CNNs and how they work to detect cyberbullying by processing images, a completely different application than stock forecasting, but it's interesting to see the versatility of these models. The authors review models like Long Short-Term Memory (LSTM) and Convolutional Neural Networks (CNN), each with unique strengths in time series analysis. LSTM, for instance, overcomes traditional limitations in recurrent neural networks by retaining long-term dependencies, making it effective for capturing stock trends. An extension, Bidirectional LSTM (BLSTM), improves accuracy further by processing data in both forward and backward directions, helpful for understanding nuanced market shifts (Zonathan et al., 2020)​
 
 In this study, CNN-based models were adapted for stock data by transforming one-dimensional time series into two-dimensional representations, allowing CNN to detect complex patterns. The CNNPred model, for example, demonstrated high accuracy on major indices like the S&P 500, illustrating how CNN can be effectively applied to stock data.
 
-The findings on hybrid CNN-LSTM models are particularly intriguing. By combining CNN’s feature extraction with LSTM’s temporal modeling, the CNN-LSTM model achieved the lowest RMSE score, showing strength in forecasting stock prices under volatile conditions. While our project hasn’t yet explored such hybrid models, this study shows there are multiple, innovative ways we could leverage these models as we refine our forecasting objectives​
+The findings on hybrid CNN-LSTM models are particularly intriguing. By combining CNN's feature extraction with LSTM's temporal modeling, the CNN-LSTM model achieved the lowest RMSE score, showing strength in forecasting stock prices under volatile conditions. While our project hasn't yet explored such hybrid models, this study shows there are multiple, innovative ways we could leverage these models as we refine our forecasting objectives​
 
 # Methods
 
@@ -250,15 +240,11 @@ The findings on hybrid CNN-LSTM models are particularly intriguing. By combining
 
 ## Decision Trees
 
-
 ## SVR
-
 
 ## LM
 
-
 ## CAPM
-
 
 # Data
 
@@ -267,7 +253,6 @@ The findings on hybrid CNN-LSTM models are particularly intriguing. By combining
 Our dataset is fairly clean overall, with only 60 total NA values across two columns: 30 in *percent_change_volume_over_last_wk* and 30 in *previous_weeks_volume*. These NAs occur because they correspond to the first week of data, where there is no previous week to calculate the volume change so we decided to omit the NAs. The dataset contains 750 observations and 16 variables, which we will split by quarters: quarter one will be used for training, and quarter two for testing.
 
 For our variables, there are is mix of variables types. Variables like *volume*, *percent_change_price*, *percent_change_volume_over_last_wk*, and *days_to_next_dividend* are numerical. However, some variables, such as *open*, *high*, *low*, *close*, *next_weeks_open*, and *next_weeks_close*, are stored as characters due to the presence of dollar signs. These will need to be transformed into numeric values for accurate analysis.
-
 
 ```{r, Distribution Plot, echo=FALSE}
 
@@ -284,10 +269,8 @@ For our variables, there are is mix of variables types. Variables like *volume*,
 
 ADD TABLE BY STOCK HE MENTIONED DURING CLASS
 
-
 # Conclusions
 
 *Concludes with a summary of the aim and results. Discusses alternative methods that can be used.*
-
 
 Based on the results (ADD TABLE VIEW BY STOCK WITH RESULTS?) we see that the model that outperforms the others is ADD STUFF. ADD STUFF.
