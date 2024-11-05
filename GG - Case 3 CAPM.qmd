@@ -13,6 +13,8 @@ library(ISLR)
 library(caret)
 library(tseries)
 library(quantmod)
+library(gt)
+library(webshot2)
 ```
 
 ```{r, loading data, cleaning and splitting}
@@ -245,17 +247,16 @@ myData <- cbind(
   returnXOM
 )
 
-# Optionally, assign column names to make it clearer
 colnames(myData) <- c(
-  "returnSP500", "returnAA", "returnAXP", "returnBA", "returnBAC","returnCAT",
-  "returnCSCO", "returnCVX", "returnDD", "returnDIS", "returnGE",
-  "returnHD", "returnHPQ", "returnIBM", "returnINTC", "returnJNJ",
-  "returnJPM", "returnKRFT", "returnKO", "returnMCD", "returnMMM",
-  "returnMRK", "returnMSFT", "returnPFE", "returnPG", "returnT",
-  "returnTRV", "returnUTX", "returnVZ", "returnWMT", "returnXOM"
+  "SP500", "AA", "AXP", "BA", "BAC", "CAT",
+  "CSCO", "CVX", "DD", "DIS", "GE",
+  "HD", "HPQ", "IBM", "INTC", "JNJ",
+  "JPM", "KRFT", "KO", "MCD", "MMM",
+  "MRK", "MSFT", "PFE", "PG", "T",
+  "TRV", "UTX", "VZ", "WMT", "XOM"
 )
 
-# View the first few rows of the combined data frame
+# View the updated column names
 head(myData)
 
 ```
@@ -285,17 +286,17 @@ betaAA = summary(lm.AA)$coefficients[2,1]
 beta_values <- c()
 
 # List of stock names (excluding SP500, which is the independent variable)
-stock_names <- c("returnAA", "returnAXP", "returnBA", "returnBAC", "returnCAT",
-                 "returnCSCO", "returnCVX", "returnDD", "returnDIS", "returnGE",
-                 "returnHD", "returnHPQ", "returnIBM", "returnINTC", "returnJNJ",
-                 "returnJPM", "returnKRFT", "returnKO", "returnMCD", "returnMMM",
-                 "returnMRK", "returnMSFT", "returnPFE", "returnPG", "returnT",
-                 "returnTRV", "returnUTX", "returnVZ", "returnWMT", "returnXOM")
+stock_names <- c("AA", "AXP", "BA", "BAC", "CAT",
+                 "CSCO", "CVX", "DD", "DIS", "GE",
+                 "HD", "HPQ", "IBM", "INTC", "JNJ",
+                 "JPM", "KRFT", "KO", "MCD", "MMM",
+                 "MRK", "MSFT", "PFE", "PG", "T",
+                 "TRV", "UTX", "VZ", "WMT", "XOM")
 
 # Loop through each stock to calculate beta using linear regression
 for (stock in stock_names) {
   # Create the formula dynamically for each stock
-  formula <- as.formula(paste(stock, "~ returnSP500"))
+  formula <- as.formula(paste(stock, "~ SP500"))
   
   # Run the linear model
   lm_model <- lm(formula, data = as.data.frame(myData))
@@ -313,15 +314,83 @@ beta_values
 ```
 
 ```{r}
-# Convert the named vector beta_values into a data frame
+library(ragg)
 beta_table <- data.frame(
   Stock = names(beta_values),
   Beta = beta_values
 )
 
-# Print the table
-print(beta_table)
+# Split the data frame into two halves for better visibility
+beta_table_left <- beta_table[1:15, ]  # First 15 stocks
+beta_table_right <- beta_table[16:30, ]  # Next 15 stocks
 
+# Combine both halves side-by-side
+beta_table_combined <- cbind(beta_table_left, beta_table_right)
+
+# Rename columns for clarity
+colnames(beta_table_combined) <- c("Stock Left", "Beta Left", "Stock Right", "Beta Right")
+
+# Create a styled table with gt
+beta_table_gt <- beta_table_combined %>%
+  gt() %>%
+  tab_header(
+    title = "Beta Values for Each Stock",
+    subtitle = "Calculated relative to SP500 returns"
+  ) %>%
+  fmt_number(
+    columns = c("Beta Left", "Beta Right"),
+    decimals = 4  # Set the number of decimal places for Beta values
+  ) %>%
+  cols_label(
+    `Stock Left` = "Stock Ticker",
+    `Beta Left` = "Beta",
+    `Stock Right` = "Stock Ticker",
+    `Beta Right` = "Beta"
+  )
+
+# Display the table in R
+beta_table_gt
+
+
+output_path <- "C:/Users/crew_/OneDrive/Escritorio/Guille/UTSA Masters/MSDA/DA6813/DA6813/beta_table.png"
+
+ragg::agg_png(filename = output_path, width = 1000, height = 600, res = 144)  # Adjust width, height, and resolution as needed
+print(beta_table_gt)  # Print the gt table to the ragg device
+dev.off()  # Close the device
+
+```
+
+```{r}
+library(gt)
+library(webshot2)
+
+# Create the gt table as before
+beta_table_gt <- beta_table_combined %>%
+  gt() %>%
+  tab_header(
+    title = "Beta Values for Each Stock",
+    subtitle = "Calculated relative to SP500 returns"
+  ) %>%
+  fmt_number(
+    columns = c("Beta Left", "Beta Right"),
+    decimals = 4
+  ) %>%
+  cols_label(
+    `Stock Left` = "Stock Ticker",
+    `Beta Left` = "Beta",
+    `Stock Right` = "Stock Ticker",
+    `Beta Right` = "Beta"
+  )
+
+# Save the gt table as an HTML file (temporary location)
+temp_html_path <- tempfile(fileext = ".html")
+gtsave(beta_table_gt, filename = temp_html_path)
+
+# Define output path for PNG
+output_png_path <- "C:/Users/crew_/OneDrive/Escritorio/Guille/UTSA Masters/MSDA/DA6813/DA6813/beta_table.png"
+
+# Capture HTML as PNG
+webshot2::webshot(temp_html_path, file = output_png_path, zoom = 2)  # Adjust zoom for resolution
 
 ```
 

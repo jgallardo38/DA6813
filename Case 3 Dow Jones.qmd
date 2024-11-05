@@ -5,17 +5,17 @@ format: pdf
 editor: visual
 ---
 
-```{r, loading libraries, echo=FALSE, warning=FALSE}
-library(dplyr)
-library(ggplot2)
-library(tree)
-library(ISLR)
-library(caret)
-library(tseries)
-library(quantmod)
+```{r, loading libraries, echo=FALSE, warning=FALSE, }
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(tree))
+suppressPackageStartupMessages(library(ISLR))
+suppressPackageStartupMessages(library(caret))
+suppressPackageStartupMessages(library(tseries))
+suppressPackageStartupMessages(library(quantmod))
 ```
 
-```{r, loading data, cleaning and splitting}
+```{r, loading data, cleaning and splitting, echo=FALSE, warning=FALSE, results='hide'}
 #getwd() #open R project file to have the same file path
 dow_data = read.csv('Data/dow_jones_index.data') # change variable name to match code
 #dow_names = read.csv('Data/dow_jones_index.names')  # change variable name to match code
@@ -84,7 +84,7 @@ print(Stock_Performance)
 
 ```
 
-```{r}
+```{r,  echo=FALSE, warning=FALSE, results='hide'}
 #getwd() #open R project file to have the same file path
 dow_data = read.csv('Data/dow_jones_index.data') # change variable name to match code
 
@@ -116,7 +116,7 @@ test = dow_data %>%
 
 ```
 
-```{r, Decision Tree, echo=FALSE, warning=FALSE}
+```{r, Decision Tree, echo=FALSE, warning=FALSE, results='hide', fig.show='hide'}
 ## grow tree
 Stock_tree <- tree(Positive_percent_change_ind ~ ., data = train)
 
@@ -132,7 +132,7 @@ plot(Stock_tree)
 text(Stock_tree, cex = 0.55)
 ```
 
-```{r, Predicting on Test, echo=FALSE, warning=FALSE}
+```{r, Predicting on Test, echo=FALSE, warning=FALSE, results='hide'}
 # Evaluating
 pred <- predict(Stock_tree, newdata = test, type = "class")
 
@@ -141,7 +141,7 @@ table(pred, test$Positive_percent_change_ind)
 
 ```
 
-```{r, Pruning Decision Tree, echo=FALSE, warning=FALSE}
+```{r, Pruning Decision Tree, echo=FALSE, warning=FALSE, results='hide', fig.show='hide'}
 set.seed(11)
 cv_tree <- cv.tree(Stock_tree, FUN = prune.misclass)
 cv_tree
@@ -174,7 +174,7 @@ table(pred_prune, test$Positive_percent_change_ind)
 
 ```
 
-```{r Regression Decision Tree, echo=FALSE, warning=FALSE}
+```{r Regression Decision Tree, echo=FALSE, warning=FALSE, results='hide', fig.show='hide'}
 train2 = dow_data %>% 
   filter(quarter == 1) %>% select(-Positive_percent_change_ind, -quarter, -date)
 
@@ -201,10 +201,6 @@ plot(cv_reg_tree$size, cv_reg_tree$dev, type = "b")
 
 ```
 
-```{r, unique stocks, echo=False, results='hide'}
-unique(dow_data$stock)
-#{{< pagebreak >}} 
-```
 
 # START REPORT BELOW
 
@@ -222,7 +218,7 @@ To achieve this, we will conduct separate analyses for each stock, calculating t
 
 We will utilize the variables in our dataset to build several predictive models to forecast future stock returns. After constructing these models, we will evaluate their performance to determine which one offers the most accurate predictions.
 
-ADD CAPM SHIT HERE - HOW WE WILL USE IT, WHAT IT TELLS US, ETC
+We will assess the risk of each stock using the S&P 500 as our benchmark. By calculating the beta for each stock, we can gain insights into the level of risk associated with each investment. Using these risk assessments alongside stock return predictions, we seek to identify the best investment recommendations based on both returns and risk. This analysis can also help guide investors in making decisions aligned with their individual risk tolerance.
 
 # Lit. Review
 
@@ -244,7 +240,19 @@ The findings on hybrid CNN-LSTM models are particularly intriguing. By combining
 
 ## LM
 
-## CAPM
+## Capital Assest Pricing Model
+
+We applied the Capital Asset Pricing Model (CAPM) CORRECT THIS TO UNDERSTAND RISK BASED ON THIS BETAto estimate the expected return of each stock based on its beta, which indicates its volatility relative to the market. CAPM assumes that markets are efficient and that there is a direct, linear relationship between risk and expected return. However, the model has certain limitations. It depends on historical data, using information from this case study and S&P 500 data from Yahoo Finance, which may not accurately reflect future volatility. Additionally, CAPM considers only market risk, overlooking other factors such as company specific risks and economic influences, which can also impact returns.
+
+To calculate the results in the below image, we filtered the data by stock so we could apply teh Delt() function to calculate the returns using the closing price for each specific week. Once we calculated the weekly returns and omited any NA, we ran the linear model with 
+
+ADD STUFF ABOUT STOCKS WITH BETA OF 1.00 INDICATED ITS PRICE IS CORRELATED WITH THE MARKET AND HIGHLIGHTS WHICH STOCKS. MENTIONED THAT THIS STOCKS HAVE SYSTEMIC RISK BUT THE BETA CALCULATION CANT DETECT ANY UNSYSTEMIC RISK
+
+MAYBE CREATE A PLOT TO SHOW Y MONTHLY SECURITY EXCESS RETURN AND MONTHLY MARKET EXCESS RETURN
+
+![](C:/Users/crew_/OneDrive/Escritorio/Guille/UTSA Masters/MSDA/DA6813/DA6813/beta_table.png){fig-align="center"}
+
+\newpage
 
 # Data
 
