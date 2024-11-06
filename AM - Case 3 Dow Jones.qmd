@@ -11,14 +11,15 @@ library(ggplot2)
 
 ```
 
-
 ### CREATING A DECISION TREE MODEL
+
 ```{r}
 library(tree)
 library(ISLR)
 ```
 
 Creating binary variable for classification
+
 ```{r}
 #getwd() #open R project file to have the same file path
 dow_data = read.csv('Data/dow_jones_index.data') # change variable name to match code
@@ -51,8 +52,8 @@ test = dow_data %>%
 
 ```
 
-
 ### DECISION TREEE
+
 ```{r}
 ## grow tree
 Stock_tree <- tree(Positive_percent_change_ind ~ ., data = train)
@@ -68,7 +69,9 @@ summary(Stock_tree)
 plot(Stock_tree)
 text(Stock_tree, cex = 0.55)
 ```
+
 ### PREDICTING ON TEST
+
 ```{r}
 # Evaluating
 pred <- predict(Stock_tree, newdata = test, type = "class")
@@ -79,6 +82,7 @@ table(pred, test$Positive_percent_change_ind)
 ```
 
 # PRUNING THE DECISION TREE
+
 ```{r}
 set.seed(11)
 cv_tree <- cv.tree(Stock_tree, FUN = prune.misclass)
@@ -111,10 +115,6 @@ table(pred_prune, test$Positive_percent_change_ind)
 
 
 ```
-
-
-
-
 
 ```{r, loading data, cleaning and splitting}
 #getwd() #open R project file to have the same file path
@@ -174,8 +174,6 @@ Our problem is to use historical weekly return data for 30 stocks in the Dow Jon
 ADD SHIT HERE
 
 We will utilize the variables in our dataset to build several predictive models to forecast future stock returns. After constructing these models, we will evaluate their performance to determine which one offers the most accurate predictions.
-
-
 
 # Lit. Review
 

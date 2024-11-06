@@ -235,12 +235,13 @@ caret::confusionMatrix(factor(predictions.lda2$class), bbc_test$Choice)# this on
 
 ```{r best models}
 ## LDA
-lda_final <- lda(Choice~. - First_purchase - Last_purchase - Observation - First_purchase_quartile - Last_purchase_quartile, bc_train_bal)
+lda_final <- lda(Choice~. - First_purchase - Last_purchase - Observation, bc_train_bal)
 lda_final
 
 predictions.lda_final <- predict(lda_final, bbc_test)
 
 ## SVM
+
 bbc_test$Choice <- as.factor(bbc_test$Choice)
 bbc_test$Gender <- as.factor(bbc_test$Gender)
 set.seed(42)
@@ -258,8 +259,8 @@ svm_final$best.parameters
 
 svm_best_final <- svm(Choice~. - First_purchase - Last_purchase 
                       - Observation, data = bc_train_bal, 
-                      gamma = tuned_bal$best.parameters$cost, 
-                      cost = tuned_bal$best.parameters$cost)
+                      gamma = svm_final$best.parameters$cost, 
+                      cost = svm_final$best.parameters$cost)
 
 preds.svm_best_final <- predict(svm_best_final, bbc_test, type = "Response")
 

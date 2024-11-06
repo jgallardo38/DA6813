@@ -1,0 +1,168 @@
+---
+title: "Untitled"
+author: "Joshua Gardner"
+date: "2024-10-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(readr)
+library(e1071)
+dow_data <- read_csv("C:/Users/Josh/Documents/Algor1/dow_jones_index.data")
+dow_data2 <- read_csv("C:/Users/Josh/Documents/Algor1/dow_jones_index.data")
+str(dow_data)
+```
+```{r NA cleaning formating}
+#changing date from char to date
+dow_data <- dow_data %>% mutate(date = mdy(date))
+
+# removing $ sign from things
+dow_data <- dow_data %>%
+  mutate(
+    open = as.numeric(gsub("\\$", "", open)),
+    high = as.numeric(gsub("\\$", "", high)),
+    low = as.numeric(gsub("\\$", "", low)),
+    next_weeks_open = as.numeric(gsub("\\$", "", next_weeks_open)),
+    next_weeks_close = as.numeric(gsub("\\$", "", next_weeks_close)),
+    close = as.numeric(gsub("\\$", "", close)))
+
+# remove missing values
+dow_data <- na.omit(dow_data)
+colSums(is.na(dow_data))
+
+#seperating stocks 
+unique(dow_data$stock)
+
+split_data <- split(dow_data, dow_data$stock)
+
+# trying to apply the Lm over all the stocks
+lm_results <- lapply(split_data, function(df) {
+  lm(volume ~ open + high + low + close +next_weeks_open, data = df)  
+})
+
+```
+
+```{r NA split into test and train}
+#split by q1 and q2
+train <- dow_data %>% filter(quarter == 1)
+test <- dow_data %>% filter(quarter==2)
+summary(test$quarter) #testing that it split correctly
+
+```
+
+```{r cleaning, splitting train/test, seperating stocks}
+#changing date from char->date
+dow_data2 <- dow_data2 %>% mutate(date = mdy(date))
+
+# removing $ sign from things
+dow_data2 <- dow_data2 %>%
+  mutate(
+    open = as.numeric(gsub("\\$", "", open)),
+    high = as.numeric(gsub("\\$", "", high)),
+    low = as.numeric(gsub("\\$", "", low)),
+    next_weeks_open = as.numeric(gsub("\\$", "", next_weeks_open)),
+    next_weeks_close = as.numeric(gsub("\\$", "", next_weeks_close)),
+    close = as.numeric(gsub("\\$", "", close)))
+
+# remove missing values
+dow_data2 <- na.omit(dow_data2)
+
+#split by q1 and q2
+train2 <- dow_data2 %>% filter(quarter == 1)
+test2 <- dow_data2 %>% filter(quarter==2)
+summary(test2$quarter) #testing that it split correctly
+
+#split the test and train data by stocks
+train_split <- split(train2, train2$stock)
+test_split <- split(test2, test2$stock)
+```
+
+```{r training the slight autoreg}
+# trying to apply the Lm over all the stocks
+lm_train <- lapply(train_split, function(df) {
+  lm(volume ~ open + high + low + close +next_weeks_open + percent_change_price + days_to_next_dividend, data = df)
+})
+
+model_summaries <- lapply(lm_train, summary)
+#print(model_summaries)
+
+predictions <- mapply(function(model, test_data) {
+  predict(model, newdata = test_data)
+}, lm_train, test_split, SIMPLIFY = FALSE)
+
+
+
+```
+
+```{r svr}
+# sensitive to outlyers so check for that 
+dow_num <- select_if(dow_data2, is.numeric)
+
+dow_long = dow_num %>% 
+  select(-quarter) %>%
+  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Value")
+
+ggplot(dow_long, aes(x = Value)) +
+  geom_boxplot(fill = "gray", color = "black") +
+  facet_wrap(~ Variable, scales = "free") +
+  theme_minimal() +
+  labs(title = "Distribution of Variables", x = NULL, y = "Frequency") +
+  theme(strip.text = element_text(face = "bold"))
+#need to break it apart and look individually 
+#take the split data and do the graphics
+
+
+#we will use the train and test set that was split above
+#Run model with and without next weeks open
+set.seed(123)
+tuning_results <- lapply(train_split, function(df) {
+        tune_result <- tune(svm, volume ~ open + high + low + close 
+                      + next_weeks_open + percent_change_price 
+                      + days_to_next_dividend,
+                      data = df,
+                      ranges = list(cost = seq(0.01, 1, by = 0.1),
+                                    gamma = seq(0.01, 0.1, by = 0.01)),
+                      kernel = "radial",
+                      type = "eps-regression",
+                      scale = TRUE)
+})
+
+svr_models <- mapply(function(df, params) {
+          svm(volume ~ open + high + low + close + next_weeks_open 
+              + percent_change_price + days_to_next_dividend, data = df,
+              type = "eps-regression",
+              kernel = "radial",
+              cost = params$cost,
+              gamma = params$gamma,
+              scale = TRUE)
+}, train_split, tuning_results, SIMPLIFY = FALSE)
+
+predictions <- lapply(seq_along(svr_models), function(i) {
+            predict(svr_models[[i]], newdata = test_split[[i]])
+})
+
+error_metrics <- mapply(function(preds, test_data) {
+  actuals <- test_data$volume  # Extract actual values for volume
+
+  # Diagnostic print statements
+  #print("Predictions:")
+  #print(preds)
+  #print("Actuals:")
+  #print(actuals)
+
+  # Calculate MAE, MSE, RMSE
+  mae <- mean(abs(preds - actuals))
+  mse <- mean((preds - actuals)^2)
+  rmse <- sqrt(mse)
+
+  # Return as a list
+  list(MAE = mae, MSE = mse, RMSE = rmse)
+}, predictions, test_split, SIMPLIFY = FALSE)
+
+# Print final error metrics
+print(error_metrics)
+```
+
