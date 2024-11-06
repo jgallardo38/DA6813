@@ -5,45 +5,118 @@ format: pdf
 editor: visual
 ---
 
-```{r, loading libraries, echo=FALSE, warning=FALSE}
-library(dplyr)
-library(ggplot2)
-library(tree)
-library(ISLR)
+```{r, loading libraries, echo=FALSE, warning=FALSE, }
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(tree))
+suppressPackageStartupMessages(library(ISLR))
+suppressPackageStartupMessages(library(caret))
+suppressPackageStartupMessages(library(tseries))
+suppressPackageStartupMessages(library(quantmod))
 ```
 
-```{r, loading data, cleaning and splitting}
+```{r, loading data, cleaning and splitting, echo=FALSE, warning=FALSE, results='hide'}
 #getwd() #open R project file to have the same file path
 dow_data = read.csv('Data/dow_jones_index.data') # change variable name to match code
 #dow_names = read.csv('Data/dow_jones_index.names')  # change variable name to match code
 
+## Taking the $ sign off
+dow_data <- dow_data %>%
+  mutate(
+    open = as.numeric(gsub("\\$", "", open)),
+    high = as.numeric(gsub("\\$", "", high)),
+    low = as.numeric(gsub("\\$", "", low)),
+    next_weeks_open = as.numeric(gsub("\\$", "", next_weeks_open)),
+    next_weeks_close = as.numeric(gsub("\\$", "", next_weeks_close)),
+    close = as.numeric(gsub("\\$", "", close))) %>% 
+  arrange(stock, date)
+
+
+
+## remove missing values
+dow_data <- na.omit(dow_data)
+
+# create classification variable
+dow_data$Positive_percent_change_ind <- factor(ifelse(dow_data$percent_change_next_weeks_price > 0, "1", "0"))
+
+
+# creating table to store each stock performance
+Stock_Performance <- data.frame(stock = character(), accuracy = numeric(), stringsAsFactors = FALSE)
+
+# Loop through each unique stock 
+for(stock_name in unique(dow_data$stock)) {
+  
+  # Filter data for the current stock
+  filtered_data <- dow_data %>% filter(stock == stock_name)
+  
+  # Split data based on quarters
+  train <- filtered_data %>% 
+    filter(quarter == 1) %>% 
+    select(-percent_change_next_weeks_price, -quarter, -date)
+  
+  test <- filtered_data %>% 
+    filter(quarter == 2) %>% 
+    select(-percent_change_next_weeks_price, -quarter, -date)
+  
+  # Check if we have sufficient data for both train and test
+    
+    # Grow tree model
+    Stock_tree <- tree(Positive_percent_change_ind ~ ., data = train)
+    
+    test$pred <- predict(Stock_tree, newdata = test, type = "class")
+    
+    # accuracy
+    table(test$pred, test$Positive_percent_change_ind)
+    cm <- confusionMatrix(test$pred, test$Positive_percent_change_ind)
+    accuracy <- cm$overall['Accuracy']
+    
+    
+    # Adding stock name and accuracy
+    Stock_Performance <- rbind(Stock_Performance, data.frame(stock = stock_name, accuracy = as.numeric(accuracy)))
+  
+}
+
+
+# Order by largest accuracy
+Stock_Performance <- Stock_Performance %>% arrange(desc(accuracy))
+print(Stock_Performance)
+
+
+```
+
+```{r,  echo=FALSE, warning=FALSE, results='hide'}
+#getwd() #open R project file to have the same file path
+dow_data = read.csv('Data/dow_jones_index.data') # change variable name to match code
+
+
 
 ## Taking the $ sign off
 dow_data <- dow_data %>%
-  mutate(open = as.numeric(gsub("\\$", "", open)),
-         high = as.numeric(gsub("\\$", "", high)),
-         low = as.numeric(gsub("\\$", "", low)),
-         next_weeks_open = as.numeric(gsub("\\$", "", next_weeks_open)),
-         next_weeks_close = as.numeric(gsub("\\$", "", next_weeks_close)),
-         close = as.numeric(gsub("\\$", "", close)))
+  mutate(
+    open = as.numeric(gsub("\\$", "", open)),
+    high = as.numeric(gsub("\\$", "", high)),
+    low = as.numeric(gsub("\\$", "", low)),
+    next_weeks_open = as.numeric(gsub("\\$", "", next_weeks_open)),
+    next_weeks_close = as.numeric(gsub("\\$", "", next_weeks_close)),
+    close = as.numeric(gsub("\\$", "", close)))
+
+
 
 ## remove missing values
 dow_data <- na.omit(dow_data)
 
 dow_data$Positive_percent_change_ind <- factor(ifelse(dow_data$percent_change_next_weeks_price > 0, "1", "0"))
 
-## Splitting data based on PDF
+## Spltting data based on PDF
 train = dow_data %>% 
-  filter(quarter == 1) %>%
-  select(-percent_change_next_weeks_price, -quarter, -date)
+  filter(quarter == 1) %>% select(-percent_change_next_weeks_price, -quarter, -date)
 
 test = dow_data %>% 
-  filter(quarter == 2) %>%
-  select(-percent_change_next_weeks_price, -quarter, -date)
+  filter(quarter == 2) %>% select(-percent_change_next_weeks_price, -quarter, -date)
 
 ```
 
-```{r, Decision Tree, echo=FALSE, warning=FALSE}
+```{r, Decision Tree, echo=FALSE, warning=FALSE, results='hide', fig.show='hide'}
 ## grow tree
 Stock_tree <- tree(Positive_percent_change_ind ~ ., data = train)
 
@@ -59,8 +132,7 @@ plot(Stock_tree)
 text(Stock_tree, cex = 0.55)
 ```
 
-
-```{r, Predicting on Test, echo=FALSE, warning=FALSE}
+```{r, Predicting on Test, echo=FALSE, warning=FALSE, results='hide'}
 # Evaluating
 pred <- predict(Stock_tree, newdata = test, type = "class")
 
@@ -69,14 +141,13 @@ table(pred, test$Positive_percent_change_ind)
 
 ```
 
-
-```{r, Pruning Decision Tree, echo=FALSE, warning=FALSE}
+```{r, Pruning Decision Tree, echo=FALSE, warning=FALSE, results='hide', fig.show='hide'}
 set.seed(11)
 cv_tree <- cv.tree(Stock_tree, FUN = prune.misclass)
 cv_tree
 
 
-# plot the estimated error from cross-validation
+# plot the estimared error from cross-validation
 par(mfrow = c(1,2))
 
 plot(cv_tree$size, cv_tree$dev, type = "b")
@@ -103,26 +174,32 @@ table(pred_prune, test$Positive_percent_change_ind)
 
 ```
 
+```{r Regression Decision Tree, echo=FALSE, warning=FALSE, results='hide', fig.show='hide'}
+train2 = dow_data %>% 
+  filter(quarter == 1) %>% select(-Positive_percent_change_ind, -quarter, -date)
 
-```{r, summary, echo=FALSE, results='hide'}
-summary(dow_data)
+test2 = dow_data %>% 
+  filter(quarter == 2) %>% select(-Positive_percent_change_ind, -quarter, -date)
+
+# GROWING TREE
+reg_tree <- tree(percent_change_next_weeks_price ~ . , data = train2)
+
+# plot tree
+plot(reg_tree)
+text(reg_tree, cex = .55)
+
+
+# pruning
+cv_reg_tree <- cv.tree(reg_tree)
+best_size2 <- cv_reg_tree$size[which.min(cv_reg_tree$dev)]
+
+
+# plot prunign tree
+plot(cv_reg_tree$size, cv_reg_tree$dev, type = "b")
+
+
+
 ```
-
-```{r, structure, echo=FALSE, results='hide'}
-str(dow_data)
-```
-
-```{r, NAs, echo=False, results='hide'}
-colSums(is.na(dow_data))
-```
-
-```{r, unique stocks, echo=False, results='hide'}
-unique(dow_data$stock)
-
-#{{< pagebreak >}} 
-```
-
-
 
 
 # START REPORT BELOW
@@ -137,32 +214,51 @@ unique(dow_data$stock)
 
 Our problem is to use historical weekly return data for 30 stocks in the Dow Jones Index to predict which stock will produce the greatest rate of return in the following week. From an application standpoint, this involves analyzing stock price trends and using past performance data to inform future investment decisions. The goal is to build predictive models using this historical data to maximize future returns.
 
-ADD SHIT HERE
+To achieve this, we will conduct separate analyses for each stock, calculating the average predictive accuracy across all stocks. This approach will allow us to identify the model that provides the highest rate of return predictions, guiding us in selecting the most effective forecasting method.
 
 We will utilize the variables in our dataset to build several predictive models to forecast future stock returns. After constructing these models, we will evaluate their performance to determine which one offers the most accurate predictions.
 
-
+We will assess the risk of each stock using the S&P 500 as our benchmark. By calculating the beta for each stock, we can gain insights into the level of risk associated with each investment. Using these risk assessments alongside stock return predictions, we seek to identify the best investment recommendations based on both returns and risk. This analysis can also help guide investors in making decisions aligned with their individual risk tolerance.
 
 # Lit. Review
 
-*Discusses and cites existing works in the theoretical and application realm.*
-Article: http://www.warse.org/IJATCSE/static/pdf/file/ijatcse135952020.pdf 
+*Discusses and cites existing works in the theoretical and application realm.* Article: http://www.warse.org/IJATCSE/static/pdf/file/ijatcse135952020.pdf
 
-This article explores several advanced machine learning models for stock price forecasting—approaches we haven’t yet used in our project but that offer valuable insights into different paths toward achieving similar goals. In our MSDA program, we’re currently learning about CNNs and how they work to detect cyberbullying by processing images, a completely different application than stock forecasting, but it’s interesting to see the versatility of these models. The authors review models like Long Short-Term Memory (LSTM) and Convolutional Neural Networks (CNN), each with unique strengths in time series analysis. LSTM, for instance, overcomes traditional limitations in recurrent neural networks by retaining long-term dependencies, making it effective for capturing stock trends. An extension, Bidirectional LSTM (BLSTM), improves accuracy further by processing data in both forward and backward directions, helpful for understanding nuanced market shifts (Zonathan et al., 2020)​
+This article explores several advanced machine learning models for stock price forecasting---approaches we haven't yet used in our project but that offer valuable insights into different paths toward achieving similar goals. In our MSDA program, we're currently learning about CNNs and how they work to detect cyberbullying by processing images, a completely different application than stock forecasting, but it's interesting to see the versatility of these models. The authors review models like Long Short-Term Memory (LSTM) and Convolutional Neural Networks (CNN), each with unique strengths in time series analysis. LSTM, for instance, overcomes traditional limitations in recurrent neural networks by retaining long-term dependencies, making it effective for capturing stock trends. An extension, Bidirectional LSTM (BLSTM), improves accuracy further by processing data in both forward and backward directions, helpful for understanding nuanced market shifts (Zonathan et al., 2020)​
 
 In this study, CNN-based models were adapted for stock data by transforming one-dimensional time series into two-dimensional representations, allowing CNN to detect complex patterns. The CNNPred model, for example, demonstrated high accuracy on major indices like the S&P 500, illustrating how CNN can be effectively applied to stock data.
 
-The findings on hybrid CNN-LSTM models are particularly intriguing. By combining CNN’s feature extraction with LSTM’s temporal modeling, the CNN-LSTM model achieved the lowest RMSE score, showing strength in forecasting stock prices under volatile conditions. While our project hasn’t yet explored such hybrid models, this study shows there are multiple, innovative ways we could leverage these models as we refine our forecasting objectives​
+The findings on hybrid CNN-LSTM models are particularly intriguing. By combining CNN's feature extraction with LSTM's temporal modeling, the CNN-LSTM model achieved the lowest RMSE score, showing strength in forecasting stock prices under volatile conditions. While our project hasn't yet explored such hybrid models, this study shows there are multiple, innovative ways we could leverage these models as we refine our forecasting objectives​
 
 # Methods
 
 *Discusses types of variables, sample size, and sampling techniques (if any). Discusses the model(s) and its assumptions and limitations.*
 
+## Decision Trees
+
+## SVR
+
+## LM
+
+## Capital Assest Pricing Model
+
+We applied the Capital Asset Pricing Model (CAPM) CORRECT THIS TO UNDERSTAND RISK BASED ON THIS BETAto estimate the expected return of each stock based on its beta, which indicates its volatility relative to the market. CAPM assumes that markets are efficient and that there is a direct, linear relationship between risk and expected return. However, the model has certain limitations. It depends on historical data, using information from this case study and S&P 500 data from Yahoo Finance, which may not accurately reflect future volatility. Additionally, CAPM considers only market risk, overlooking other factors such as company specific risks and economic influences, which can also impact returns.
+
+To calculate the results in the below image, we filtered the data by stock so we could apply teh Delt() function to calculate the returns using the closing price for each specific week. Once we calculated the weekly returns and omited any NA, we ran the linear model with 
+
+ADD STUFF ABOUT STOCKS WITH BETA OF 1.00 INDICATED ITS PRICE IS CORRELATED WITH THE MARKET AND HIGHLIGHTS WHICH STOCKS. MENTIONED THAT THIS STOCKS HAVE SYSTEMIC RISK BUT THE BETA CALCULATION CANT DETECT ANY UNSYSTEMIC RISK
+
+MAYBE CREATE A PLOT TO SHOW Y MONTHLY SECURITY EXCESS RETURN AND MONTHLY MARKET EXCESS RETURN
+
+![](C:/Users/crew_/OneDrive/Escritorio/Guille/UTSA Masters/MSDA/DA6813/DA6813/beta_table.png){fig-align="center"}
+
+\newpage
+
 # Data
 
 *Discusses how data was handled, i.e. cleaned and preprocessed. Discusses distributions, correlations, etc.*
 
-Our dataset is fairly clean overall, with only 60 total NA values across two columns: 30 in *percent_change_volume_over_last_wk* and 30 in *previous_weeks_volume*. These NAs occur because they correspond to the first week of data, where there is no previous week to calculate the volume change. The dataset contains 750 observations and 16 variables.
+Our dataset is fairly clean overall, with only 60 total NA values across two columns: 30 in *percent_change_volume_over_last_wk* and 30 in *previous_weeks_volume*. These NAs occur because they correspond to the first week of data, where there is no previous week to calculate the volume change so we decided to omit the NAs. The dataset contains 750 observations and 16 variables, which we will split by quarters: quarter one will be used for training, and quarter two for testing.
 
 For our variables, there are is mix of variables types. Variables like *volume*, *percent_change_price*, *percent_change_volume_over_last_wk*, and *days_to_next_dividend* are numerical. However, some variables, such as *open*, *high*, *low*, *close*, *next_weeks_open*, and *next_weeks_close*, are stored as characters due to the presence of dollar signs. These will need to be transformed into numeric values for accurate analysis.
 
@@ -179,6 +275,10 @@ For our variables, there are is mix of variables types. Variables like *volume*,
 
 *Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.*
 
+ADD TABLE BY STOCK HE MENTIONED DURING CLASS
+
 # Conclusions
 
 *Concludes with a summary of the aim and results. Discusses alternative methods that can be used.*
+
+Based on the results (ADD TABLE VIEW BY STOCK WITH RESULTS?) we see that the model that outperforms the others is ADD STUFF. ADD STUFF.

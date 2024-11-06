@@ -1,0 +1,396 @@
+---
+title: "Case 3 - Dow Jones"
+author: "Josh Gardner, Alex Martinez, Cameron Playle, and Guillermo Gallardo"
+format: pdf
+editor: visual
+---
+
+```{r, loading libraries, echo=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(tree)
+library(ISLR)
+library(caret)
+library(tseries)
+library(quantmod)
+library(gt)
+library(webshot2)
+```
+
+```{r, loading data, cleaning and splitting}
+#getwd() #open R project file to have the same file path
+dow_data = read.csv('Data/dow_jones_index.data') # change variable name to match code
+#dow_names = read.csv('Data/dow_jones_index.names')  # change variable name to match code
+
+## Taking the $ sign off
+dow_data <- dow_data %>%
+  mutate(
+    open = as.numeric(gsub("\\$", "", open)),
+    high = as.numeric(gsub("\\$", "", high)),
+    low = as.numeric(gsub("\\$", "", low)),
+    next_weeks_open = as.numeric(gsub("\\$", "", next_weeks_open)),
+    next_weeks_close = as.numeric(gsub("\\$", "", next_weeks_close)),
+    close = as.numeric(gsub("\\$", "", close))) %>% 
+  arrange(stock, date)
+
+
+
+## remove missing values
+dow_data <- na.omit(dow_data)
+
+```
+
+
+```{r, unique stocks, echo=False, results='hide'}
+unique(dow_data$stock)
+#{{< pagebreak >}} 
+```
+
+```{r, creating variables for each stock}
+sp500 = readxl::read_xlsx('Data/Weekly Price SP500.xlsx')
+sp500 = as.data.frame(sp500)
+aa <- dow_data %>%
+  filter(stock == "AA") %>% 
+  select(date, open, high, low, close, volume)
+
+axp <- dow_data %>%
+  filter(stock == "AXP") %>% 
+  select(date, open, high, low, close, volume)
+
+ba <- dow_data %>%
+  filter(stock == "BA") %>% 
+  select(date, open, high, low, close, volume)
+
+bac <- dow_data %>%
+  filter(stock == "BAC") %>% 
+  select(date, open, high, low, close, volume)
+
+cat <- dow_data %>%
+  filter(stock == "CAT") %>% 
+  select(date, open, high, low, close, volume)
+
+csco <- dow_data %>%
+  filter(stock == "CSCO") %>% 
+  select(date, open, high, low, close, volume)
+
+cvx <- dow_data %>%
+  filter(stock == "CVX") %>% 
+  select(date, open, high, low, close, volume)
+
+dd <- dow_data %>%
+  filter(stock == "DD") %>% 
+  select(date, open, high, low, close, volume)
+
+dis <- dow_data %>%
+  filter(stock == "DIS") %>% 
+  select(date, open, high, low, close, volume)
+
+ge <- dow_data %>%
+  filter(stock == "GE") %>% 
+  select(date, open, high, low, close, volume)
+
+hd <- dow_data %>%
+  filter(stock == "HD") %>% 
+  select(date, open, high, low, close, volume)
+
+hpq <- dow_data %>%
+  filter(stock == "HPQ") %>% 
+  select(date, open, high, low, close, volume)
+
+ibm <- dow_data %>%
+  filter(stock == "IBM") %>% 
+  select(date, open, high, low, close, volume)
+
+intc <- dow_data %>%
+  filter(stock == "INTC") %>% 
+  select(date, open, high, low, close, volume)
+
+jnj <- dow_data %>%
+  filter(stock == "JNJ") %>% 
+  select(date, open, high, low, close, volume)
+
+jpm <- dow_data %>%
+  filter(stock == "JPM") %>% 
+  select(date, open, high, low, close, volume)
+
+krft <- dow_data %>%
+  filter(stock == "KRFT") %>% 
+  select(date, open, high, low, close, volume)
+
+ko <- dow_data %>%
+  filter(stock == "KO") %>% 
+  select(date, open, high, low, close, volume)
+
+mcd <- dow_data %>%
+  filter(stock == "MCD") %>% 
+  select(date, open, high, low, close, volume)
+
+mmm <- dow_data %>%
+  filter(stock == "MMM") %>% 
+  select(date, open, high, low, close, volume)
+
+mrk <- dow_data %>%
+  filter(stock == "MRK") %>% 
+  select(date, open, high, low, close, volume)
+
+msft <- dow_data %>%
+  filter(stock == "MSFT") %>% 
+  select(date, open, high, low, close, volume)
+
+pfe <- dow_data %>%
+  filter(stock == "PFE") %>% 
+  select(date, open, high, low, close, volume)
+
+pg <- dow_data %>%
+  filter(stock == "PG") %>% 
+  select(date, open, high, low, close, volume)
+
+t <- dow_data %>%
+  filter(stock == "T") %>% 
+  select(date, open, high, low, close, volume)
+
+trv <- dow_data %>%
+  filter(stock == "TRV") %>% 
+  select(date, open, high, low, close, volume)
+
+utx <- dow_data %>%
+  filter(stock == "UTX") %>% 
+  select(date, open, high, low, close, volume)
+
+vz <- dow_data %>%
+  filter(stock == "VZ") %>% 
+  select(date, open, high, low, close, volume)
+
+wmt <- dow_data %>%
+  filter(stock == "WMT") %>% 
+  select(date, open, high, low, close, volume)
+
+xom <- dow_data %>%
+  filter(stock == "XOM") %>% 
+  select(date, open, high, low, close, volume)
+
+
+```
+
+
+
+```{r, calculating return using close}
+# Calculate returns for each stock
+returnAA <- na.omit(Delt(aa[,5]))
+returnAXP <- na.omit(Delt(axp[,5]))
+returnBA <- na.omit(Delt(ba[,5]))
+returnBAC <- na.omit(Delt(bac[,5]))
+returnCAT <- na.omit(Delt(cat[,5]))
+returnCSCO <- na.omit(Delt(csco[,5]))
+returnCVX <- na.omit(Delt(cvx[,5]))
+returnDD <- na.omit(Delt(dd[,5]))
+returnDIS <- na.omit(Delt(dis[,5]))
+returnGE <- na.omit(Delt(ge[,5]))
+returnHD <- na.omit(Delt(hd[,5]))
+returnHPQ <- na.omit(Delt(hpq[,5]))
+returnIBM <- na.omit(Delt(ibm[,5]))
+returnINTC <- na.omit(Delt(intc[,5]))
+returnJNJ <- na.omit(Delt(jnj[,5]))
+returnJPM <- na.omit(Delt(jpm[,5]))
+returnKRFT <- na.omit(Delt(krft[,5]))
+returnKO <- na.omit(Delt(ko[,5]))
+returnMCD <- na.omit(Delt(mcd[,5]))
+returnMMM <- na.omit(Delt(mmm[,5]))
+returnMRK <- na.omit(Delt(mrk[,5]))
+returnMSFT <- na.omit(Delt(msft[,5]))
+returnPFE <- na.omit(Delt(pfe[,5]))
+returnPG <- na.omit(Delt(pg[,5]))
+returnT <- na.omit(Delt(t[,5]))
+returnTRV <- na.omit(Delt(trv[,5]))
+returnUTX <- na.omit(Delt(utx[,5]))
+returnVZ <- na.omit(Delt(vz[,5]))
+returnWMT <- na.omit(Delt(wmt[,5]))
+returnXOM <- na.omit(Delt(xom[,5]))
+returnSP500 <- na.omit(Delt(sp500[,5]))
+
+```
+
+
+```{r, combining returns}
+# Combine all return variables into a single data frame
+myData <- cbind(
+  returnSP500,
+  returnAA,
+  returnAXP,
+  returnBA,
+  returnBAC,
+  returnCAT,
+  returnCSCO,
+  returnCVX,
+  returnDD,
+  returnDIS,
+  returnGE,
+  returnHD,
+  returnHPQ,
+  returnIBM,
+  returnINTC,
+  returnJNJ,
+  returnJPM,
+  returnKRFT,
+  returnKO,
+  returnMCD,
+  returnMMM,
+  returnMRK,
+  returnMSFT,
+  returnPFE,
+  returnPG,
+  returnT,
+  returnTRV,
+  returnUTX,
+  returnVZ,
+  returnWMT,
+  returnXOM
+)
+
+colnames(myData) <- c(
+  "SP500", "AA", "AXP", "BA", "BAC", "CAT",
+  "CSCO", "CVX", "DD", "DIS", "GE",
+  "HD", "HPQ", "IBM", "INTC", "JNJ",
+  "JPM", "KRFT", "KO", "MCD", "MMM",
+  "MRK", "MSFT", "PFE", "PG", "T",
+  "TRV", "UTX", "VZ", "WMT", "XOM"
+)
+
+# View the updated column names
+head(myData)
+
+```
+
+
+```{r, ugly boxplot}
+boxplot(myData, main = "Return", xlab = "stock", ylab = "return")
+```
+
+```{r, calculating mean and standard deviation}
+DataMean = apply(myData, 2, mean)
+DataSD = apply(myData, 2, sd)
+cbind(DataMean, DataSD)
+```
+
+
+```{r, models}
+lm.AA = lm(returnAA ~ returnSP500, data = as.data.frame(myData))
+summary(lm.AA)
+betaAA = summary(lm.AA)$coefficients[2,1]
+
+
+```
+
+```{r}
+# Initialize a named vector to store betas for each stock
+beta_values <- c()
+
+# List of stock names (excluding SP500, which is the independent variable)
+stock_names <- c("AA", "AXP", "BA", "BAC", "CAT",
+                 "CSCO", "CVX", "DD", "DIS", "GE",
+                 "HD", "HPQ", "IBM", "INTC", "JNJ",
+                 "JPM", "KRFT", "KO", "MCD", "MMM",
+                 "MRK", "MSFT", "PFE", "PG", "T",
+                 "TRV", "UTX", "VZ", "WMT", "XOM")
+
+# Loop through each stock to calculate beta using linear regression
+for (stock in stock_names) {
+  # Create the formula dynamically for each stock
+  formula <- as.formula(paste(stock, "~ SP500"))
+  
+  # Run the linear model
+  lm_model <- lm(formula, data = as.data.frame(myData))
+  
+  # Extract the beta (slope) coefficient for the stock
+  beta_value <- summary(lm_model)$coefficients[2, 1]
+  
+  # Store the beta in the vector with the stock name as the key
+  beta_values[stock] <- beta_value
+}
+
+# View the beta values for each stock
+beta_values
+
+```
+
+```{r}
+library(ragg)
+beta_table <- data.frame(
+  Stock = names(beta_values),
+  Beta = beta_values
+)
+
+# Split the data frame into two halves for better visibility
+beta_table_left <- beta_table[1:15, ]  # First 15 stocks
+beta_table_right <- beta_table[16:30, ]  # Next 15 stocks
+
+# Combine both halves side-by-side
+beta_table_combined <- cbind(beta_table_left, beta_table_right)
+
+# Rename columns for clarity
+colnames(beta_table_combined) <- c("Stock Left", "Beta Left", "Stock Right", "Beta Right")
+
+# Create a styled table with gt
+beta_table_gt <- beta_table_combined %>%
+  gt() %>%
+  tab_header(
+    title = "Beta Values for Each Stock",
+    subtitle = "Calculated relative to SP500 returns"
+  ) %>%
+  fmt_number(
+    columns = c("Beta Left", "Beta Right"),
+    decimals = 4  # Set the number of decimal places for Beta values
+  ) %>%
+  cols_label(
+    `Stock Left` = "Stock Ticker",
+    `Beta Left` = "Beta",
+    `Stock Right` = "Stock Ticker",
+    `Beta Right` = "Beta"
+  )
+
+# Display the table in R
+beta_table_gt
+
+
+output_path <- "C:/Users/crew_/OneDrive/Escritorio/Guille/UTSA Masters/MSDA/DA6813/DA6813/beta_table.png"
+
+ragg::agg_png(filename = output_path, width = 1000, height = 600, res = 144)  # Adjust width, height, and resolution as needed
+print(beta_table_gt)  # Print the gt table to the ragg device
+dev.off()  # Close the device
+
+```
+
+```{r}
+library(gt)
+library(webshot2)
+
+# Create the gt table as before
+beta_table_gt <- beta_table_combined %>%
+  gt() %>%
+  tab_header(
+    title = "Beta Values for Each Stock",
+    subtitle = "Calculated relative to SP500 returns"
+  ) %>%
+  fmt_number(
+    columns = c("Beta Left", "Beta Right"),
+    decimals = 4
+  ) %>%
+  cols_label(
+    `Stock Left` = "Stock Ticker",
+    `Beta Left` = "Beta",
+    `Stock Right` = "Stock Ticker",
+    `Beta Right` = "Beta"
+  )
+
+# Save the gt table as an HTML file (temporary location)
+temp_html_path <- tempfile(fileext = ".html")
+gtsave(beta_table_gt, filename = temp_html_path)
+
+# Define output path for PNG
+output_png_path <- "C:/Users/crew_/OneDrive/Escritorio/Guille/UTSA Masters/MSDA/DA6813/DA6813/beta_table.png"
+
+# Capture HTML as PNG
+webshot2::webshot(temp_html_path, file = output_png_path, zoom = 2)  # Adjust zoom for resolution
+
+```
+
