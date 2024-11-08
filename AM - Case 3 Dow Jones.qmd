@@ -5,18 +5,91 @@ format: pdf
 editor: visual
 ---
 
-```{r, loading libraries, echo=FALSE, warning=FALSE}
-library(dplyr)
-library(ggplot2)
-
-```
 
 ### CREATING A DECISION TREE MODEL
 
+### REGRESSION TREE
 ```{r}
 library(tree)
 library(ISLR)
+library(dplyr)
+library(ggplot2)
+library(caret)
+
+set.seed(11)
+#getwd() #open R project file to have the same file path
+dow_data = read.csv('Data/dow_jones_index.data') # change variable name to match code
+
+
+
+## Taking the $ sign off
+dow_data <- dow_data %>%
+  mutate(
+    open = as.numeric(gsub("\\$", "", open)),
+    high = as.numeric(gsub("\\$", "", high)),
+    low = as.numeric(gsub("\\$", "", low)),
+    next_weeks_open = as.numeric(gsub("\\$", "", next_weeks_open)),
+    next_weeks_close = as.numeric(gsub("\\$", "", next_weeks_close)),
+    close = as.numeric(gsub("\\$", "", close)))
+
+
+
+## remove missing values
+dow_data <- na.omit(dow_data)
+
+# create classification variable
+dow_data$Positive_percent_change_ind <- factor(ifelse(dow_data$percent_change_next_weeks_price > 0, "1", "0"))
+
+
+# creating table to store each stock performance
+Stock_Performance <- data.frame(stock = character(), accuracy = numeric(), stringsAsFactors = FALSE)
+
+# Loop through each unique stock 
+for(stock_name in unique(dow_data$stock)) {
+  
+  # Filter data for the current stock
+  filtered_data <- dow_data %>% filter(stock == stock_name)
+  
+  # Split data based on quarters
+  train <- filtered_data %>% 
+    filter(quarter == 1) %>% 
+    select(-Positive_percent_change_ind, -quarter, -date, -next_weeks_open, -next_weeks_close)
+  
+  test <- filtered_data %>% 
+    filter(quarter == 2) %>% 
+    select(-Positive_percent_change_ind, -quarter, -date, -next_weeks_open, -next_weeks_close)
+  
+  # Check if we have sufficient data for both train and test
+  
+  # Grow tree model
+  Stock_tree <- tree(percent_change_next_weeks_price ~ ., data = train)
+  
+  test$pred <- predict(Stock_tree, newdata = test)
+  
+  # MSE
+  mse <- mean((test$percent_change_next_weeks_price - test$pred)^2)
+  
+  # accuracy
+   # table(test$pred, test$Positive_percent_change_ind)
+#  cm <- confusionMatrix(test$pred, test$Positive_percent_change_ind)
+#  accuracy <- cm$overall['Accuracy']
+  
+  
+  # Adding stock name and accuracy
+  Stock_Performance <- rbind(Stock_Performance, data.frame(stock = stock_name, mse_error = mse))
+  
+}
+
+
+# Order by largest accuracy
+Stock_Performance <- Stock_Performance %>% arrange((mse_error))
+print(Stock_Performance)
+
+# Optional: Visualize the tree
+plot(tree_model)
+text(tree_model, pretty = 0)
 ```
+
 
 
 ### ADDING ITERATION TO GET DECISION TREE AND ACCURACY OF EACH STOCK ALONE
@@ -63,11 +136,11 @@ for(stock_name in unique(dow_data$stock)) {
   # Split data based on quarters
   train <- filtered_data %>% 
     filter(quarter == 1) %>% 
-    select(-percent_change_next_weeks_price, -quarter, -date)
+    select(-percent_change_next_weeks_price, -quarter, -date, -next_weeks_open, -next_weeks_close)
   
   test <- filtered_data %>% 
     filter(quarter == 2) %>% 
-    select(-percent_change_next_weeks_price, -quarter, -date)
+    select(-percent_change_next_weeks_price, -quarter, -date, -next_weeks_open, -next_weeks_close)
   
   # Check if we have sufficient data for both train and test
     
