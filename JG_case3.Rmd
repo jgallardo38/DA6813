@@ -274,10 +274,10 @@ print(comparison_df)
 
 # Create the quadrant plot
 comparison_df <- comparison_df %>%
-  mutate(highlight = ifelse(stock %in% c("KRFT", "HPQ"), "highlight", "normal"))
+  mutate(highlight = ifelse(stock %in% c("KRFT", "HPQ", "KO"), "highlight", "normal"))
 
 # Create the plot
-ggplot(comparison_df, aes(x = Beta, y = return)) +
+ggplot(comparison_df, aes(x = Beta, y = percentage_change)) +
   # Plot all points, but differentiate highlighted points
   geom_point(aes(color = highlight, size = highlight), shape = 21, fill = "blue") +
   # Add labels for all stocks, but make highlighted labels bold and larger
@@ -288,12 +288,15 @@ ggplot(comparison_df, aes(x = Beta, y = return)) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "gray") +  # Vertical line for quadrants
   geom_hline(yintercept = 0, linetype = "dashed", color = "gray") +  # Horizontal line for quadrants
   labs(
-    title = "Quadrant Plot of Return vs. Beta",
+    title = "Risk-Return Quadrant",
     x = "Beta (Risk Measure)",
     y = "Return (%)"
   ) +
   theme_minimal() +
   theme(legend.position = "none")  # Remove legend
+
+ggsave("C:/Users/crew_/OneDrive/Escritorio/Guille/UTSA Masters/MSDA/DA6813/DA6813/quadrant_plot.png", width = 10, height = 6, dpi = 300)
+
 
 ```
 ```{r}
