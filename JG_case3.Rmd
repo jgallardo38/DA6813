@@ -12,10 +12,13 @@ library(lubridate)
 library(readr)
 library(e1071)
 library(car)
-dow_data <- read_csv("C:/Users/Josh/Documents/Algor1/dow_jones_index.data")
-dow_data2 <- read_csv("C:/Users/Josh/Documents/Algor1/dow_jones_index.data")
+#dow_data <- read_csv("C:/Users/Josh/Documents/Algor1/dow_jones_index.data")
+#dow_data2 <- read_csv("C:/Users/Josh/Documents/Algor1/dow_jones_index.data")
+dow_data <- read.csv('Data/dow_jones_index.data') #added this so I (Guille) could run it in my computer
+dow_data2 <- read.csv('Data/dow_jones_index.data') #added this so I (Guille) could run it in my computer
 str(dow_data)
 ```
+
 ```{r NA cleaning formating}
 #changing date from char to date
 dow_data <- dow_data %>% mutate(date = mdy(date))
@@ -228,5 +231,71 @@ stocks <- data.frame(stock)
 lm_preds <- sapply(predictions_lm, function(pred) tail(pred, 1))
 
 stocks$lm_preds <- lm_preds
+
+stocks
+```
+```{r, beta stuff from G}
+beta = read.csv("C:/Users/crew_/OneDrive/Escritorio/Guille/UTSA Masters/MSDA/DA6813/DA6813/stock_beta.csv")
+beta
+
+```
+
+```{r, tried calculating returns}
+
+test$date <- as.Date(test$date)
+
+last_closing_prices <- test %>%
+  group_by(stock) %>%
+  filter(date == max(date)) %>%  
+  select(stock, date, close) %>%
+  ungroup()
+
+comparison_df <- last_closing_prices %>%
+  inner_join(stocks, by = "stock")
+
+comparison_df <- comparison_df %>%
+  inner_join(beta, by = "stock")
+
+
+comparison_df <- comparison_df %>%
+  mutate(percentage_change = ((lm_preds - close) / close) * 100)
+
+comparison_df %>% 
+  comparison_df %>% 
+  rename(return = percentage_change)
+
+print(comparison_df)
+
+
+```
+
+```{r, quadrant}
+
+# Create the quadrant plot
+comparison_df <- comparison_df %>%
+  mutate(highlight = ifelse(stock %in% c("KRFT", "HPQ"), "highlight", "normal"))
+
+# Create the plot
+ggplot(comparison_df, aes(x = Beta, y = return)) +
+  # Plot all points, but differentiate highlighted points
+  geom_point(aes(color = highlight, size = highlight), shape = 21, fill = "blue") +
+  # Add labels for all stocks, but make highlighted labels bold and larger
+  geom_text(aes(label = stock, color = highlight, fontface = ifelse(highlight == "highlight", "bold", "plain")),
+            vjust = -0.5, size = 3) +
+  scale_color_manual(values = c("highlight" = "red", "normal" = "black")) +  # Highlighted stocks in red
+  scale_size_manual(values = c("highlight" = 4, "normal" = 2)) +  # Larger size for highlighted points
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray") +  # Vertical line for quadrants
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray") +  # Horizontal line for quadrants
+  labs(
+    title = "Quadrant Plot of Return vs. Beta",
+    x = "Beta (Risk Measure)",
+    y = "Return (%)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")  # Remove legend
+
+```
+```{r}
+names(comparison_df)
 ```
 

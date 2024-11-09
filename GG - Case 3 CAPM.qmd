@@ -40,7 +40,6 @@ dow_data <- na.omit(dow_data)
 
 ```
 
-
 ```{r, unique stocks, echo=False, results='hide'}
 unique(dow_data$stock)
 #{{< pagebreak >}} 
@@ -172,8 +171,6 @@ xom <- dow_data %>%
 
 ```
 
-
-
 ```{r, calculating return using close}
 # Calculate returns for each stock
 returnAA <- na.omit(Delt(aa[,5]))
@@ -209,7 +206,6 @@ returnXOM <- na.omit(Delt(xom[,5]))
 returnSP500 <- na.omit(Delt(sp500[,5]))
 
 ```
-
 
 ```{r, combining returns}
 # Combine all return variables into a single data frame
@@ -261,7 +257,6 @@ head(myData)
 
 ```
 
-
 ```{r, ugly boxplot}
 boxplot(myData, main = "Return", xlab = "stock", ylab = "return")
 ```
@@ -271,7 +266,6 @@ DataMean = apply(myData, 2, mean)
 DataSD = apply(myData, 2, sd)
 cbind(DataMean, DataSD)
 ```
-
 
 ```{r, models}
 lm.AA = lm(returnAA ~ returnSP500, data = as.data.frame(myData))
@@ -310,6 +304,8 @@ for (stock in stock_names) {
 
 # View the beta values for each stock
 beta_values
+
+write.csv(beta_values,"C:/Users/crew_/OneDrive/Escritorio/Guille/UTSA Masters/MSDA/DA6813/DA6813/stock_beta.csv")
 
 ```
 
@@ -393,4 +389,3 @@ output_png_path <- "C:/Users/crew_/OneDrive/Escritorio/Guille/UTSA Masters/MSDA/
 webshot2::webshot(temp_html_path, file = output_png_path, zoom = 2)  # Adjust zoom for resolution
 
 ```
-
