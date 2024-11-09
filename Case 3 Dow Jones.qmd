@@ -1,7 +1,7 @@
 ---
 title: "Case 3 - Dow Jones"
 author: "Josh Gardner, Alex Martinez, Cameron Playle, and Guillermo Gallardo"
-format: pdf
+format: docx
 editor: visual
 ---
 
