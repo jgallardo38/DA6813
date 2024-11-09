@@ -186,7 +186,7 @@ svr_models <- mapply(function(df, best_params) {
               scale = TRUE)
 }, train_split, tuning_results, SIMPLIFY = FALSE)
 
-
+##preds here
 predictions <- lapply(seq_along(svr_models), function(i) {
             predict(svr_models[[i]], newdata = test_split[[i]])
 })
@@ -215,8 +215,18 @@ print(average_rmse_svm)
 # Print final error metrics
 #print(error_metrics)
 
-lapply(seq_along(predictions), function(i) {
+svm_preds <- lapply(seq_along(predictions), function(i) {
   cat("Final prediction for stock", i, ":", tail(predictions[[i]], 1), "\n")
 })
+```
+
+```{r creating df with stocks and preds}
+stock <- unique(dow_data2$stock)
+
+stocks <- data.frame(stock)
+
+lm_preds <- sapply(predictions_lm, function(pred) tail(pred, 1))
+
+stocks$lm_preds <- lm_preds
 ```
 
