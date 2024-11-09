@@ -11,6 +11,7 @@ library(dplyr)
 library(lubridate)
 library(readr)
 library(e1071)
+library(car)
 dow_data <- read_csv("C:/Users/Josh/Documents/Algor1/dow_jones_index.data")
 dow_data2 <- read_csv("C:/Users/Josh/Documents/Algor1/dow_jones_index.data")
 str(dow_data)
@@ -81,20 +82,57 @@ test_split <- split(test2, test2$stock)
 ```
 
 ```{r training the slight autoreg}
+##training whole data lm to identify covariance
+all_lm <- lm(close ~ . - quarter - stock - next_weeks_open - high - open 
+             - next_weeks_close - volume, data=train2)
+##- next_weeks_open - high - open - next_weeks_close - volume
+## all high co lin values
+vif(all_lm)
+
 # trying to apply the Lm over all the stocks
+# try model with volume and previous_weeks_volume as lagging indicator
 lm_train <- lapply(train_split, function(df) {
-  lm(volume ~ open + high + low + close +next_weeks_open + percent_change_price + days_to_next_dividend, data = df)
+  lm(close ~ date + low + percent_change_price 
+      + percent_change_volume_over_last_wk + previous_weeks_volume 
+      + percent_change_next_weeks_price + days_to_next_dividend 
+      + percent_return_next_dividend, data = df)
 })
 
 model_summaries <- lapply(lm_train, summary)
 #print(model_summaries)
 
-predictions <- mapply(function(model, test_data) {
+predictions_lm <- mapply(function(model, test_data) {
   predict(model, newdata = test_data)
 }, lm_train, test_split, SIMPLIFY = FALSE)
 
+error_metrics_lm <- mapply(function(preds, test_data) {
+  actuals <- test_data$volume  # Extract actual values for volume
+
+  # Diagnostic print statements
+  #print("Predictions:")
+  #print(preds)
+  #print("Actuals:")
+  #print(actuals)
+
+  # Calculate MAE, MSE, RMSE
+  #mae <- mean(abs(preds - actuals))
+  mse <- mean((preds - actuals)^2)
+  rmse <- sqrt(mse)
+
+  # Return as a list
+  list(RMSE = rmse)
+}, predictions_lm, test_split, SIMPLIFY = FALSE)
+
+rmse_values <- sapply(error_metrics_lm, function(x) x$RMSE)
+average_rmse <- mean(rmse_values)
+print(average_rmse)
+# Print final error metrics
+print(error_metrics_lm)
 
 
+lapply(seq_along(predictions_lm), function(i) {
+  cat("Final prediction for stock", i, ":", tail(predictions_lm[[i]], 1), "\n")
+})
 ```
 
 ```{r svr}
@@ -117,28 +155,37 @@ ggplot(dow_long, aes(x = Value)) +
 
 #we will use the train and test set that was split above
 #Run model with and without next weeks open
+
+##tunning svm model
 set.seed(123)
 tuning_results <- lapply(train_split, function(df) {
-        tune_result <- tune(svm, volume ~ open + high + low + close 
-                      + next_weeks_open + percent_change_price 
-                      + days_to_next_dividend,
+        tune_result <- tune(svm, close ~ date + low + percent_change_price 
+      + percent_change_volume_over_last_wk + previous_weeks_volume 
+      + percent_change_next_weeks_price + days_to_next_dividend 
+      + percent_return_next_dividend,
                       data = df,
                       ranges = list(cost = seq(0.01, 1, by = 0.1),
                                     gamma = seq(0.01, 0.1, by = 0.01)),
                       kernel = "radial",
                       type = "eps-regression",
                       scale = TRUE)
+
+  best_params <- tune_result$best.parameters
 })
 
-svr_models <- mapply(function(df, params) {
-          svm(volume ~ open + high + low + close + next_weeks_open 
-              + percent_change_price + days_to_next_dividend, data = df,
+##svm model with best params used 
+svr_models <- mapply(function(df, best_params) {
+          svm(close ~ date + low + percent_change_price 
+      + percent_change_volume_over_last_wk + previous_weeks_volume 
+      + percent_change_next_weeks_price + days_to_next_dividend 
+      + percent_return_next_dividend, data = df,
               type = "eps-regression",
               kernel = "radial",
-              cost = params$cost,
-              gamma = params$gamma,
+              cost = best_params$cost,
+              gamma = best_params$gamma,
               scale = TRUE)
 }, train_split, tuning_results, SIMPLIFY = FALSE)
+
 
 predictions <- lapply(seq_along(svr_models), function(i) {
             predict(svr_models[[i]], newdata = test_split[[i]])
@@ -147,22 +194,29 @@ predictions <- lapply(seq_along(svr_models), function(i) {
 error_metrics <- mapply(function(preds, test_data) {
   actuals <- test_data$volume  # Extract actual values for volume
 
-  # Diagnostic print statements
+  #Diagnostic print statements
   #print("Predictions:")
   #print(preds)
   #print("Actuals:")
   #print(actuals)
 
   # Calculate MAE, MSE, RMSE
-  mae <- mean(abs(preds - actuals))
+  #mae <- mean(abs(preds - actuals))
   mse <- mean((preds - actuals)^2)
   rmse <- sqrt(mse)
 
   # Return as a list
-  list(MAE = mae, MSE = mse, RMSE = rmse)
+  list(RMSE = rmse)
 }, predictions, test_split, SIMPLIFY = FALSE)
 
+rmse_values_svm <- sapply(error_metrics, function(x) x$RMSE)
+average_rmse_svm <- mean(rmse_values_svm)
+print(average_rmse_svm)
 # Print final error metrics
-print(error_metrics)
+#print(error_metrics)
+
+lapply(seq_along(predictions), function(i) {
+  cat("Final prediction for stock", i, ":", tail(predictions[[i]], 1), "\n")
+})
 ```
 
