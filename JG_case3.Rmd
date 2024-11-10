@@ -216,7 +216,7 @@ rmse_values_svm <- sapply(error_metrics, function(x) x$RMSE)
 average_rmse_svm <- mean(rmse_values_svm)
 print(average_rmse_svm)
 # Print final error metrics
-#print(error_metrics)
+print(error_metrics)
 
 svm_preds <- lapply(seq_along(predictions), function(i) {
   cat("Final prediction for stock", i, ":", tail(predictions[[i]], 1), "\n")
@@ -235,17 +235,21 @@ stocks$lm_preds <- lm_preds
 stocks
 ```
 ```{r, beta stuff from G}
+<<<<<<< Updated upstream
 beta = read.csv("C:/Users/crew_/OneDrive/Escritorio/Guille/UTSA Masters/MSDA/DA6813/DA6813/stock_beta.csv")
 
+=======
+beta = read.csv("C:/Users/Josh/Documents/Algor1/DA-/DA6813/stock_beta.csv")
+>>>>>>> Stashed changes
 beta
 
 ```
 
 ```{r, tried calculating returns}
 
-test$date <- as.Date(test$date)
+test2$date <- as.Date(test2$date)
 
-last_closing_prices <- test %>%
+last_closing_prices <- test2 %>%
   group_by(stock) %>%
   filter(date == max(date)) %>%  
   select(stock, date, close) %>%
@@ -261,9 +265,12 @@ comparison_df <- comparison_df %>%
 comparison_df <- comparison_df %>%
   mutate(percentage_change = ((lm_preds - close) / close) * 100)
 
-comparison_df %>% 
-  comparison_df %>% 
-  rename(return = percentage_change)
+
+##not needed probably
+
+#comparison_df %>% 
+  #comparison_df %>% 
+  #rename(return = percentage_change)
 
 print(comparison_df)
 
