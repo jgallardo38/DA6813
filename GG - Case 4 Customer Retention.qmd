@@ -1,0 +1,156 @@
+---
+title: "Case 4 Customer Retention"
+format: docx
+editor: visual
+---
+
+```{r, results='hide', echo=FALSE}
+library(SMCRM)
+library(corrplot)
+library(ggplot2)
+library(dplyr)
+library(e1071)
+library(Metrics)
+
+data("acquisitionRetention")
+
+retention = acquisitionRetention %>%
+  select(-customer, -duration, -profit, -ret_exp, -ret_exp_sq, -freq, -freq_sq, -crossbuy, -sow)
+
+retention$acquisition = as.factor(retention$acquisition)
+
+#retention = acquisitionRetention
+#try all 3 kernels for SVM
+
+# Data Splitting
+
+class0 = retention %>% 
+  filter(acquisition == "0")
+
+class1 = retention %>%
+  filter(acquisition == "1")
+
+set.seed(123)
+class_sampled = class1 %>% 
+  slice_sample(n = nrow(class0))
+
+set.seed(123)
+class_balanced = bind_rows(class0, class_sampled)
+
+# train and test
+
+class_split = sample(nrow(class_balanced), 0.7*nrow(class_balanced), replace = F)
+train = class_balanced[class_split, ]
+test = class_balanced[-class_split, ]
+```
+
+
+```{r}
+table(retention$acquisition)
+table(class_balanced$acquisition)
+str(retention)
+```
+
+```{r, correlation plot, echo=FALSE}
+cor(retention)
+cor_matrix  = cor(retention)
+
+corrplot(cor_matrix, method = "color")
+
+```
+
+
+
+# START REPORT BELOW
+
+# Executive Summary
+
+*Brief introduction of problem. Summarizes key findings. Summarizes insights behind key findings.*
+
+# Problem
+
+*Clear description of the problem, from an application and theoretical point of view. Outlines the report.*
+
+
+
+# Lit. Review
+
+*Discusses and cites existing works in the theoretical and application realm.* 
+
+
+# Methods
+
+*Discusses types of variables, sample size, and sampling techniques (if any). Discusses the model(s) and its assumptions and limitations.*
+
+## Logistic
+
+## SVM
+
+```{r, SVM}
+set.seed(123)
+tuned = tune.svm(acquisition ~ ., data = train, gamma = seq(0.01, .1, by = .01), cost = seq(.1, 1, by = .1))
+
+#tuned$best.parameters
+
+#tuned$best.parameters$gamma
+#tuned$best.parameters$cost
+
+#error
+
+#tuned$performances
+
+#model
+mysvm = svm(acquisition ~., data = train, gamma = tuned$best.parameters$gamma, cost = tuned$best.parameters$cost, probability = TRUE)
+
+summary(mysvm)
+
+# predict
+
+svmpredict = predict(mysvm, test, type = "response")
+table(pred = svmpredict, true = test$acquisition)
+
+```
+
+```{r, Mean Average Precision}
+
+# Predict probabilities
+svmpredict_probs = attr(predict(mysvm, test, probability = TRUE), "probabilities")[, 2]
+
+# Define true values
+true_values = as.numeric(as.character(test$acquisition))
+
+# Convert to lists for mapk
+actual_list = list(true_values)  # Actual values wrapped in a list
+predicted_list = list(order(-svmpredict_probs)) # Predictions ordered by probability
+
+# Calculate MAP
+map_score = mapk(k = length(true_values), actual = actual_list, predicted = predicted_list)
+print(paste("MAP:", map_score))
+
+```
+
+
+
+## Decision Trees
+
+## Random Forest
+
+
+# Data
+
+*Discusses how data was handled, i.e. cleaned and preprocessed. Discusses distributions, correlations, etc.*
+
+Our dataset included 15 variables and 500 observations, with no missing values or NA's. While we observed a number of zeroes, these were correlated with the acquisition column, which indicates whether a prospect was acquired. As part of the data cleaning process, we looked into the correlations among these variables and removed those with the highest correlation to reduce multicollinearity. Also, we removed one of the customer ID fields. The variables removed from the dataset include *customer*, *duration*, *profit*, *ret_exp*, *ret_exp_sq*, *freq*, *freq_sq*, *crossbuy*, and *sow*. No additional data cleaning was necessary.
+
+
+Our dataset was unbalanced
+
+
+# Results
+
+*Presents and discusses the results from model(s). Discusses relationships between covariates and response, if possible, and provides deep insights behind relationships in the context of the application.*
+
+
+# Conclusions
+
+*Concludes with a summary of the aim and results. Discusses alternative methods that can be used.*
