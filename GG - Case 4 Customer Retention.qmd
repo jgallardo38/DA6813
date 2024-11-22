@@ -86,14 +86,18 @@ corrplot(cor_matrix, method = "color")
 
 ## SVM
 
+Our SVM model was trained using a radial basis function kernel, we used gamma (rannging from 0.01 to 0.1) and cost (ranging from 0.1 to 1). The best parameters came up to gamma = 0.1 and cost = 0.6 which we used in our model. The final model shows 123 support vectors. 
+
+The model performance was evaluated using a confusion matrix and the mean average precision. In the confusion matrix we can see the model correctly predicted 76 observations (37 from class 0 and 39 from class 1), but misclassfied 22 instances. The MAP score was low at 0.0017, indicating the model struggled with the predictions. 
+
 ```{r, SVM}
 set.seed(123)
 tuned = tune.svm(acquisition ~ ., data = train, gamma = seq(0.01, .1, by = .01), cost = seq(.1, 1, by = .1))
 
-#tuned$best.parameters
+tuned$best.parameters
 
-#tuned$best.parameters$gamma
-#tuned$best.parameters$cost
+tuned$best.parameters$gamma
+tuned$best.parameters$cost
 
 #error
 
