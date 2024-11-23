@@ -1,0 +1,63 @@
+---
+title: "CaseStudy 4"
+author: "alex m"
+date: "2024-11-20"
+output: html_document
+---
+
+## Libraries
+```{r cars}
+library(SMCRM)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+Variable information
+```{r pressure, echo=FALSE}
+data(acquisitionRetention)
+df1 <- acquisitionRetention
+str(df1)
+
+```
+```{r}
+df1$customer <- NULL
+summary(df1)
+cor(df1)
+```
+
+
+```{r}
+par(mfrow=c(1,1))
+df1$acquisition <- as.factor(df1$acquisition)
+df1$industry <- as.factor(df1$industry)
+```
+
+
+
+```{r}
+library(caret)
+```
+
+creating train/test dataset
+```{r}
+set.seed(1)
+inTrain <- createDataPartition(y = df1$acquisition, p=0.8, list=FALSE)
+df1.train <- df1[inTrain, ]
+df1.test <- df1[-inTrain, ]
+
+RF1 <- train(acquisition ~ acq_exp + industry + revenue + employees, data = df1.train, method='rf', trControl = TrnCtrl, importance=TRUE)
+#RF1$finalModel
+
+RF1acq.preds <- predict(RF1, df1.test)
+confusionMatrix(RF1acq.preds, df1.test$acquisition)
+```
+overall accuracy is 76.8%. Lets try it on the full dataset
+```{r}
+RF1acq.preds.full <- predict(RF1, df1)
+summary(RF1acq.preds.full)
+```
+
+
+
