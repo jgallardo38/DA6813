@@ -92,7 +92,7 @@ The model performance was evaluated using a confusion matrix and the mean averag
 
 ```{r, SVM}
 set.seed(123)
-tuned = tune.svm(acquisition ~ ., data = train, gamma = seq(0.01, .1, by = .01), cost = seq(.1, 1, by = .1))
+tuned = tune.svm(acquisition ~ ., data = train, gamma = seq(0.01, .1, by = .01), cost = seq(.1, 1, by = .1), kernel = "radial")
 
 tuned$best.parameters
 
