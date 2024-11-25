@@ -40,24 +40,82 @@ df1$industry <- as.factor(df1$industry)
 library(caret)
 ```
 
-creating train/test dataset
+
+### BAGGING
 ```{r}
+library(tidyverse)
+library(gbm)
+library(ISLR)
+library(randomForest)
+library(tree)
+
+newdata <- df1 %>% select(acquisition,acq_exp, industry, revenue, employees)
+inTrain <- createDataPartition(y = newdata$acquisition, p=0.8, list=FALSE)
+df1.train <- newdata[inTrain, ]
+df1.test <- newdata[-inTrain, ]
+```
+Tree
+
+```{r}
+treef <- tree(acquisition ~., df1.train)
+summary(treef)
+
+# plot
+plot(treef)
+text(treef, pretty = 0, cex = 1.1)
+
+
+# perform cost complexitiy prunign with CV
 set.seed(1)
-inTrain <- createDataPartition(y = df1$acquisition, p=0.8, list=FALSE)
-df1.train <- df1[inTrain, ]
-df1.test <- df1[-inTrain, ]
+cv_tree <- cv.tree(treef, FUN=prune.misclass)
+cv_tree
+#size 15 gives lowest deviance
 
-RF1 <- train(acquisition ~ acq_exp + industry + revenue + employees, data = df1.train, method='rf', trControl = TrnCtrl, importance=TRUE)
-#RF1$finalModel
+#plot to confirm
+par(mfrow = c(1,1))
+plot(cv_tree$size, cv_tree$dev, type = 'b', xlab = 'tree size', ylab = 'dev')
 
-RF1acq.preds <- predict(RF1, df1.test)
-confusionMatrix(RF1acq.preds, df1.test$acquisition)
+
+#best size
+bestsz = cv_tree$size[which.min(cv_tree$dev)]
+
+#plot prun tree
+prune_tree = prune.misclass(treef, best = 15)
+plot(prune_tree)
+text(prune_tree, pretty = 0)
+
+
+#Outputs
+prune_pred <- predict(prune_tree, df1.test, type = 'class')
+table(prune_pred, df1.test$acquisition)
+
+#errorr rates
+test_error <- 1-(16+58)/99
+
+
+## Bagging
+bag_tree = randomForest(acquisition ~ ., data= df1.train, mtry = 4, ntree = 1000, importance = T)
+
+
+#test error
+bag_prob = predict(bag_tree, newdata = df1.test)
+table(df1.test$acquisition, bag_prob)
+
+test.errRF = 1-(18+60)/99
+
+test.errRF # RF Bagging
+test_error #tree
+
+
+#variable importance
+importance(bag_tree)
+varImpPlot(bag_tree)
+
+
+
+
+
+
+
 ```
-overall accuracy is 76.8%. Lets try it on the full dataset
-```{r}
-RF1acq.preds.full <- predict(RF1, df1)
-summary(RF1acq.preds.full)
-```
-
-
 
