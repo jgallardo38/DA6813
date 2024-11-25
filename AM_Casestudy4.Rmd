@@ -1,0 +1,121 @@
+---
+title: "CaseStudy 4"
+author: "alex m"
+date: "2024-11-20"
+output: html_document
+---
+
+## Libraries
+```{r cars}
+library(SMCRM)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+Variable information
+```{r pressure, echo=FALSE}
+data(acquisitionRetention)
+df1 <- acquisitionRetention
+str(df1)
+
+```
+```{r}
+df1$customer <- NULL
+summary(df1)
+cor(df1)
+```
+
+
+```{r}
+par(mfrow=c(1,1))
+df1$acquisition <- as.factor(df1$acquisition)
+df1$industry <- as.factor(df1$industry)
+```
+
+
+
+```{r}
+library(caret)
+```
+
+
+### BAGGING
+```{r}
+library(tidyverse)
+library(gbm)
+library(ISLR)
+library(randomForest)
+library(tree)
+
+newdata <- df1 %>% select(acquisition,acq_exp, industry, revenue, employees)
+inTrain <- createDataPartition(y = newdata$acquisition, p=0.8, list=FALSE)
+df1.train <- newdata[inTrain, ]
+df1.test <- newdata[-inTrain, ]
+```
+Tree
+
+```{r}
+treef <- tree(acquisition ~., df1.train)
+summary(treef)
+
+# plot
+plot(treef)
+text(treef, pretty = 0, cex = 1.1)
+
+
+# perform cost complexitiy prunign with CV
+set.seed(1)
+cv_tree <- cv.tree(treef, FUN=prune.misclass)
+cv_tree
+#size 15 gives lowest deviance
+
+#plot to confirm
+par(mfrow = c(1,1))
+plot(cv_tree$size, cv_tree$dev, type = 'b', xlab = 'tree size', ylab = 'dev')
+
+
+#best size
+bestsz = cv_tree$size[which.min(cv_tree$dev)]
+
+#plot prun tree
+prune_tree = prune.misclass(treef, best = 15)
+plot(prune_tree)
+text(prune_tree, pretty = 0)
+
+
+#Outputs
+prune_pred <- predict(prune_tree, df1.test, type = 'class')
+table(prune_pred, df1.test$acquisition)
+
+#errorr rates
+test_error <- 1-(16+58)/99
+
+
+## Bagging
+bag_tree = randomForest(acquisition ~ ., data= df1.train, mtry = 4, ntree = 1000, importance = T)
+
+
+#test error
+bag_prob = predict(bag_tree, newdata = df1.test)
+table(df1.test$acquisition, bag_prob)
+
+test.errRF = 1-(18+60)/99
+
+test.errRF # RF Bagging
+test_error #tree
+
+
+#variable importance
+importance(bag_tree)
+varImpPlot(bag_tree)
+
+
+
+
+
+
+
+```
+
