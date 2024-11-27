@@ -211,6 +211,18 @@ forest_D <- rfsrc(duration ~ . - ret_exp - freq,
                             ntree = 1000)
 
 forest_D
+
+rf.pred_d<-predict.rfsrc(forest_D,newdata = df_test_D)
+
+#Extract predicted values for 'duration'
+predicted_values <- rf.pred_d$predicted
+
+# Extract actual values from the test dataset
+actual_values <- df_test_D$duration
+
+# Calculate MAPE
+non_zero_indices <- actual_values != 0
+mape <- mean(abs((actual_values[non_zero_indices] - predicted_values[non_zero_indices]) / actual_values[non_zero_indices])) * 100
 ```
 ```{r importance}
 forest_D$importance
