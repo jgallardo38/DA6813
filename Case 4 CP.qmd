@@ -164,6 +164,8 @@ vif(glm.viftest)
 ```{r}
 
 install.packages("randomForestSRC")
+
+
 library(randomForestSRC)
 
 set.seed(1)
