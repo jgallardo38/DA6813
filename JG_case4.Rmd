@@ -48,6 +48,23 @@ df_trainB <- df_bal[trainIndexB, ]
 df_testB <- df_bal[-trainIndexB, ]
 ```
 
+```{r logistic regression}
+glm.acq <- glm(acquisition ~., data=df_trainB, family = binomial)
+glm_step <- step(glm.acq, direction = "backward") # stepwise backward elim.
+summary(glm_step)
+
+pred.glm <- predict(glm_step, newdata = df_testB, type = "response")
+
+predicted_classes <- ifelse(pred.glm > 0.5, 1, 0)
+
+actual_classes <- df_testB$acquisition  
+
+# Create the confusion matrix
+conf_matrix <- confusionMatrix(as.factor(predicted_classes), as.factor(actual_classes))
+
+conf_matrix
+```
+
 ```{r build tree}
 tree.df <- tree(acquisition ~ ., data = df_train)
 
@@ -73,6 +90,7 @@ table(tree.preds2, df_test$acquisition)
 
 caret::confusionMatrix(tree.preds2, df_test$acquisition)
 ```
+
 ```{r Tree with balanced data}
 tree.dfB <- tree(acquisition ~ ., data = df_trainB)
 
@@ -152,7 +170,7 @@ caret::confusionMatrix(rf_preds, df_testB$acquisition)
 
 forest1$importance
 
-
+rf_preds
 ```
 
 ```{r attaching predictions and selecting new df}
@@ -224,6 +242,7 @@ actual_values <- df_test_D$duration
 non_zero_indices <- actual_values != 0
 mape <- mean(abs((actual_values[non_zero_indices] - predicted_values[non_zero_indices]) / actual_values[non_zero_indices])) * 100
 ```
+
 ```{r importance}
 forest_D$importance
 
