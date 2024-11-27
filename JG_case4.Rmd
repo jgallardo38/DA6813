@@ -1,0 +1,218 @@
+---
+title: "case study 4"
+author: "Joshua Gardner"
+date: "2024-11-20"
+output: html_document
+---
+
+```{r}
+install.packages('SMCRM')
+library(SMCRM)
+library(dplyr)
+library(readxl)
+library(tidyr)
+library(ggplot2)
+library(stats)
+library(e1071)
+library(caret)
+library(tree)
+library(survival) # survival
+library(rpart) # DT
+library(randomForestSRC)
+library(car)
+data("acquisitionRetention")
+df<- acquisitionRetention
+```
+
+```{r}
+df2 <- df %>% select(acquisition, acq_exp, acq_exp_sq, industry, employees)
+df2$acquisition <- as.factor(df2$acquisition)
+set.seed(123)
+trainIndex <- createDataPartition(df2[, 1], p = 0.7, list = FALSE)
+df_train <- df2[trainIndex, ]
+df_test <- df2[-trainIndex, ]
+```
+
+```{r balancing data}
+set.seed(123) 
+df2.1 = df2 %>% filter(acquisition == 1)
+df2.0 = df2 %>% filter(acquisition == 0)
+
+sample1 = sample_n(df2.1, nrow(df2.0))
+
+df_bal = rbind(sample1,df2.0)
+
+set.seed(123)
+trainIndexB <- createDataPartition(df_bal[, 1], p = 0.7, list = FALSE)
+df_trainB <- df_bal[trainIndexB, ]
+df_testB <- df_bal[-trainIndexB, ]
+```
+
+```{r build tree}
+tree.df <- tree(acquisition ~ ., data = df_train)
+
+#summary(tree.df)
+
+plot(tree.df)
+text(tree.df, cex=.7)
+
+tree.preds <- predict(tree.df, newdata=df_test, type = "class")
+
+table(tree.preds, df_test$acquisition)
+
+#w/out sow
+###this is the one
+tree.df2 <- tree(acquisition ~ ., data = df_train)
+
+plot(tree.df2)
+text(tree.df2, cex=.7)
+
+tree.preds2 <- predict(tree.df2, newdata=df_test, type = "class")
+
+table(tree.preds2, df_test$acquisition)
+
+caret::confusionMatrix(tree.preds2, df_test$acquisition)
+```
+```{r Tree with balanced data}
+tree.dfB <- tree(acquisition ~ ., data = df_trainB)
+
+plot(tree.dfB)
+text(tree.dfB, cex=.7)
+
+tree.predsB <- predict(tree.dfB, newdata=df_testB, type = "class")
+
+table(tree.predsB, df_testB$acquisition)
+
+caret::confusionMatrix(tree.predsB, df_testB$acquisition)
+```
+
+```{r pruning}
+set.seed(123)
+cv.df2 <- cv.tree(tree.df2, FUN = prune.misclass)
+cv.df2
+
+par(mfrow = c(1,2))
+plot(cv.df2$size, cv.df2$dev, type = "b")
+plot(cv.df2$k, cv.df2$dev, type = "b")
+
+best_size <- cv.df2$size[which.min(cv.df2$dev)]
+
+prune.df2 <- prune.misclass(tree.df2, best = best_size)
+
+par(mfrow = c(1,1))
+plot(prune.df2)
+text(prune.df2, cex=.7)
+
+# no difference between a pruin tree and unpruined, the optimal pruining gave me the same tree as a regular unpruind. 
+
+###pruning with balanced data
+###this is much better 
+set.seed(123)
+cv.dfB <- cv.tree(tree.dfB, FUN = prune.misclass)
+cv.dfB
+
+par(mfrow = c(1,2))
+plot(cv.dfB$size, cv.dfB$dev, type = "b")
+plot(cv.dfB$k, cv.dfB$dev, type = "b")
+
+best_sizeB <- cv.dfB$size[which.min(cv.dfB$dev)]
+
+prune.dfB <- prune.misclass(tree.dfB, best = best_sizeB)
+
+par(mfrow = c(1,1))
+plot(prune.dfB)
+text(prune.dfB, cex=.7)
+
+tree.predsB_pruin <- predict(prune.dfB, newdata=df_testB, type = "class")
+caret::confusionMatrix(tree.predsB_pruin, df_testB$acquisition)
+
+#as expected the tree is worse when pruned 
+```
+
+```{r Random forest model for acquisition}
+set.seed(123)
+forest1 <- rfsrc(acquisition ~ . - sow, 
+                  data = df_trainB, 
+                  importance = TRUE, 
+                  ntree = 1000)
+
+forest1
+
+predicted_values <- rf_preds$class  # Use $class for class predictions
+
+# Compute accuracy
+accuracy <- mean(predicted_values == actual_values)
+
+# Print the accuracy
+cat("Accuracy:", accuracy, "\n")
+
+rf_preds <- predict(forest1, newdata=df_testB, type = "class")
+
+caret::confusionMatrix(rf_preds, df_testB$acquisition)
+
+forest1$importance
+
+
+```
+
+```{r attaching predictions and selecting new df}
+pred_acq <- predict(forest1, newdata=df2, type = "class")
+
+pred_acq_class <- pred_acq$class
+
+df3<-df
+df3$Predicted_Acquisition <- pred_acq_class
+
+df4 <- df3 %>% filter(Predicted_Acquisition == 1)
+
+```
+
+```{r building model for duration}
+df_dur <- df4 %>% select(duration, profit, acq_exp, ret_exp, ret_exp_sq, freq, freq_sq, crossbuy, sow, industry, revenue, employees)
+
+#looking at distribution 
+df_long = df_dur %>% 
+  dplyr::select(duration, profit, acq_exp, ret_exp, ret_exp_sq, freq, freq_sq, crossbuy, sow, industry, revenue, employees) %>%
+  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Value")
+
+ggplot(df_long, aes(x = Value)) +
+  geom_histogram(bins = 30, fill = "gray", color = "black") +
+  facet_wrap(~ Variable, scales = "free") +
+  theme_minimal() +
+  labs(title = "Distribution of Variables", x = NULL, y = "Frequency") +
+  theme(strip.text = element_text(face = "bold"))
+
+##lm for baseline and variable selection
+
+lm.dur <- lm(duration~., data=df_dur)
+summary(lm.dur)
+vif(lm.dur)
+
+lm.dur2 <- lm(duration~. - ret_exp, data=df_dur)
+summary(lm.dur2)
+vif(lm.dur2)
+
+##this one has the least covariance 
+lm.dur3 <- lm(duration~. - ret_exp - freq, data=df_dur)
+summary(lm.dur3)
+vif(lm.dur3)
+
+#train test split
+set.seed(123)
+trainIndex_D <- createDataPartition(df_dur[, 1], p = 0.7, list = FALSE)
+df_train_D <- df_dur[trainIndex_D, ]
+df_test_D <- df_dur[-trainIndex_D, ]
+
+#random forest 
+set.seed(123)
+forest_D <- rfsrc(duration ~ . - ret_exp - freq, 
+                            data = df_train_D, 
+                            importance = TRUE, 
+                            ntree = 1000)
+
+forest_D
+```
+```{r importance}
+forest_D$importance
+```
+
